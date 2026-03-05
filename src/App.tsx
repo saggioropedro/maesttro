@@ -3,7 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
+import { BrowserRouter, Routes, Route, useNavigate } from 'react-router-dom';
+import ClientArea from './pages/ClientArea';
 import { 
   MessageCircle, 
   TrendingUp, 
@@ -23,7 +25,9 @@ import {
   Quote,
   Star,
   Menu,
-  X
+  X,
+  Sun,
+  Moon
 } from 'lucide-react';
 import { motion, AnimatePresence, useScroll, useTransform } from 'motion/react';
 
@@ -33,11 +37,11 @@ const WHATSAPP_LINK = `https://wa.me/${WHATSAPP_NUMBER}?text=Olá! Gostaria de f
 // Logo Component
 const Logo = ({ className = "w-8 h-8 md:w-10 md:h-10" }: { className?: string }) => {
   return (
-    <div className={`${className} bg-white rounded-lg flex items-center justify-center overflow-hidden border border-brand-100 shadow-sm`}>
+    <div className={`${className} flex items-center justify-center overflow-hidden`}>
       <img 
         src="/img/logo/logo_maesttro_roxo.png" 
         alt="Maesttro Logo" 
-        className="w-full h-full object-cover"
+        className="w-full h-full object-contain"
         referrerPolicy="no-referrer"
       />
     </div>
@@ -51,7 +55,7 @@ const Button = ({ children, className = "", primary = false, onClick }: { childr
     className={`px-5 py-3 md:px-6 md:py-3 rounded-full font-medium transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer active:scale-95 touch-manipulation ${
       primary 
       ? "bg-brand-600 text-white hover:bg-brand-700 shadow-lg shadow-brand-600/20" 
-      : "bg-white text-brand-900 border border-zinc-200 hover:border-zinc-400"
+      : "bg-white dark:bg-zinc-800 text-brand-900 dark:text-zinc-100 border border-zinc-200 dark:border-zinc-700 hover:border-zinc-400 dark:hover:border-zinc-500"
     } ${className}`}
   >
     {children}
@@ -66,21 +70,21 @@ const SectionTitle = ({ children, subtitle, light = false }: { children: React.R
     transition={{ duration: 0.6, ease: "easeOut" }}
     className="mb-10 md:mb-12 text-center px-4"
   >
-    {subtitle && <span className="text-brand-600 font-mono text-[10px] md:text-xs uppercase tracking-widest mb-2 block">{subtitle}</span>}
-    <h2 className={`text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight leading-tight ${light ? 'text-white' : 'text-brand-900'}`}>{children}</h2>
+    {subtitle && <span className="text-brand-600 dark:text-brand-400 font-mono text-[10px] md:text-xs uppercase tracking-widest mb-2 block">{subtitle}</span>}
+    <h2 className={`text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight leading-tight ${light ? 'text-white' : 'text-brand-900 dark:text-white'}`}>{children}</h2>
   </motion.div>
 );
 
 const FAQItem = ({ question, answer }: { question: string, answer: string }) => {
   const [isOpen, setIsOpen] = useState(false);
   return (
-    <div className="border-b border-zinc-200 py-4">
+    <div className="border-b border-zinc-200 dark:border-zinc-800 py-4">
       <button 
         className="w-full flex justify-between items-center text-left py-2 focus:outline-none group"
         onClick={() => setIsOpen(!isOpen)}
       >
-        <span className="text-lg font-medium text-zinc-800 group-hover:text-brand-600 transition-colors">{question}</span>
-        {isOpen ? <ChevronUp className="text-zinc-400" /> : <ChevronDown className="text-zinc-400" />}
+        <span className="text-lg font-medium text-zinc-800 dark:text-zinc-200 group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-colors">{question}</span>
+        {isOpen ? <ChevronUp className="text-zinc-400 dark:text-zinc-500" /> : <ChevronDown className="text-zinc-400 dark:text-zinc-500" />}
       </button>
       <AnimatePresence>
         {isOpen && (
@@ -90,7 +94,7 @@ const FAQItem = ({ question, answer }: { question: string, answer: string }) => 
             exit={{ height: 0, opacity: 0 }}
             className="overflow-hidden"
           >
-            <p className="text-zinc-600 py-2 leading-relaxed">{answer}</p>
+            <p className="text-zinc-600 dark:text-zinc-400 py-2 leading-relaxed">{answer}</p>
           </motion.div>
         )}
       </AnimatePresence>
@@ -98,7 +102,8 @@ const FAQItem = ({ question, answer }: { question: string, answer: string }) => 
   );
 };
 
-export default function App() {
+function LandingPage({ theme, toggleTheme }: { theme: 'light' | 'dark', toggleTheme: () => void }) {
+  const navigate = useNavigate();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [showLogoTooltip, setShowLogoTooltip] = useState(false);
 
@@ -115,9 +120,9 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-brand-50 font-sans text-brand-900 selection:bg-brand-100 selection:text-brand-900">
+    <div className="min-h-screen bg-brand-50 dark:bg-zinc-950 font-sans text-brand-900 dark:text-zinc-100 selection:bg-brand-100 dark:selection:bg-brand-900 selection:text-brand-900 dark:selection:text-white transition-colors duration-700 ease-in-out">
       {/* 1. HEADER */}
-      <header className="fixed top-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-md border-b border-brand-100">
+      <header className="fixed top-0 left-0 right-0 z-50 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-md border-b border-brand-100 dark:border-zinc-800 transition-colors duration-700 ease-in-out">
         <div className="max-w-7xl mx-auto px-4 h-16 md:h-20 flex items-center justify-between">
           <div 
             className="flex items-center gap-2 relative group cursor-help"
@@ -125,7 +130,7 @@ export default function App() {
             onMouseLeave={() => setShowLogoTooltip(false)}
           >
             <Logo />
-            <span className="font-jakarta font-bold text-lg md:text-xl tracking-tight uppercase">
+            <span className="font-outfit font-bold text-lg md:text-xl tracking-tight uppercase dark:text-white">
               Maes<span className="text-brand-600">tt</span>ro
             </span>
             
@@ -135,26 +140,38 @@ export default function App() {
                   initial={{ opacity: 0, y: 10, scale: 0.95 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: 5, scale: 0.95 }}
-                  className="absolute top-full left-0 mt-2 px-3 py-1.5 bg-brand-900 text-white text-[10px] md:text-xs font-medium rounded-md shadow-xl whitespace-nowrap z-[60] pointer-events-none"
+                  className="absolute top-full left-0 mt-2 px-3 py-1.5 bg-brand-900 dark:bg-brand-700 text-white text-[10px] md:text-xs font-medium rounded-md shadow-xl whitespace-nowrap z-[60] pointer-events-none"
                 >
                   Maesttro - Regência Estratégica
-                  <div className="absolute -top-1 left-4 w-2 h-2 bg-brand-900 rotate-45" />
+                  <div className="absolute -top-1 left-4 w-2 h-2 bg-brand-900 dark:bg-brand-700 rotate-45" />
                 </motion.div>
               )}
             </AnimatePresence>
           </div>
           
           {/* Desktop Nav */}
-          <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-zinc-600">
-            <a href="#problema" className="hover:text-brand-900 transition-colors">A Orquestra</a>
-            <a href="#metodo" className="hover:text-brand-900 transition-colors">O Método</a>
-            <a href="#depoimentos" className="hover:text-brand-900 transition-colors">Depoimentos</a>
-            <a href="#autoridade" className="hover:text-brand-900 transition-colors">O Maestro</a>
+          <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-zinc-600 dark:text-zinc-400">
+            <a href="#harmonia" className="hover:text-brand-900 dark:hover:text-white transition-colors">Harmonia</a>
+            <a href="#metodo" className="hover:text-brand-900 dark:hover:text-white transition-colors">O Método</a>
+            <a href="#depoimentos" className="hover:text-brand-900 dark:hover:text-white transition-colors">Depoimentos</a>
+            <a href="#autoridade" className="hover:text-brand-900 dark:hover:text-white transition-colors">O Maestro</a>
           </nav>
 
-          <div className="flex items-center gap-4">
-            <Button className="hidden sm:flex text-sm py-2 px-4" onClick={handleWhatsAppClick}>
-              Falar com o Maesttro
+          <div className="flex items-center gap-2 sm:gap-4">
+            {/* Theme Toggle (Desktop Only) */}
+            <button
+              onClick={toggleTheme}
+              className="hidden md:flex p-2 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-600 dark:text-zinc-400 transition-all duration-700 ease-in-out cursor-pointer"
+              aria-label={theme === 'light' ? 'Ativar modo escuro' : 'Ativar modo claro'}
+            >
+              {theme === 'light' ? <Moon className="w-5 h-5" /> : <Sun className="w-5 h-5" />}
+            </button>
+
+            <Button 
+              className="flex text-[10px] sm:text-sm py-1.5 px-3 sm:py-2 sm:px-4 border-brand-200 dark:border-zinc-700 text-brand-900 dark:text-zinc-100 hover:bg-brand-50 dark:hover:bg-zinc-800" 
+              onClick={() => navigate('/area-cliente')}
+            >
+              Área do Cliente
             </Button>
             
             {/* Mobile Menu Toggle */}
@@ -174,15 +191,26 @@ export default function App() {
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
-              className="md:hidden bg-white border-b border-brand-100 overflow-hidden"
+              className="md:hidden bg-white dark:bg-zinc-900 border-b border-brand-100 dark:border-zinc-800 overflow-hidden"
             >
-              <nav className="flex flex-col p-4 gap-4 text-base font-medium text-zinc-600">
-                <a href="#problema" onClick={() => setIsMobileMenuOpen(false)} className="py-2 hover:text-brand-900 border-b border-zinc-50">A Orquestra</a>
-                <a href="#metodo" onClick={() => setIsMobileMenuOpen(false)} className="py-2 hover:text-brand-900 border-b border-zinc-50">O Método</a>
-                <a href="#depoimentos" onClick={() => setIsMobileMenuOpen(false)} className="py-2 hover:text-brand-900 border-b border-zinc-50">Depoimentos</a>
-                <a href="#autoridade" onClick={() => setIsMobileMenuOpen(false)} className="py-2 hover:text-brand-900 border-b border-zinc-50">O Maestro</a>
-                <Button primary className="mt-2 w-full" onClick={() => { handleWhatsAppClick(); setIsMobileMenuOpen(false); }}>
-                  Falar com o Maesttro
+              <nav className="flex flex-col p-4 gap-4 text-base font-medium text-zinc-600 dark:text-zinc-400">
+                <a href="#harmonia" onClick={() => setIsMobileMenuOpen(false)} className="py-2 hover:text-brand-900 dark:hover:text-white border-b border-zinc-50 dark:border-zinc-800">Harmonia</a>
+                <a href="#metodo" onClick={() => setIsMobileMenuOpen(false)} className="py-2 hover:text-brand-900 dark:hover:text-white border-b border-zinc-50 dark:border-zinc-800">O Método</a>
+                <a href="#depoimentos" onClick={() => setIsMobileMenuOpen(false)} className="py-2 hover:text-brand-900 dark:hover:text-white border-b border-zinc-50 dark:border-zinc-800">Depoimentos</a>
+                <a href="#autoridade" onClick={() => setIsMobileMenuOpen(false)} className="py-2 hover:text-brand-900 dark:hover:text-white border-b border-zinc-50 dark:border-zinc-800">O Maestro</a>
+                
+                <div className="flex items-center justify-between py-2 border-b border-zinc-50 dark:border-zinc-800">
+                  <span className="text-sm">Tema</span>
+                  <button
+                    onClick={toggleTheme}
+                    className="p-2 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400"
+                  >
+                    {theme === 'light' ? <Moon className="w-5 h-5" /> : <Sun className="w-5 h-5" />}
+                  </button>
+                </div>
+
+                <Button primary className="mt-2 w-full" onClick={() => { navigate('/area-cliente'); setIsMobileMenuOpen(false); }}>
+                  Área do Cliente
                 </Button>
               </nav>
             </motion.div>
@@ -210,16 +238,16 @@ export default function App() {
             style={{ y, opacity }}
             className="absolute inset-0 -z-10"
           >
-            <div className="absolute inset-0 bg-gradient-to-b from-brand-50/70 via-white/90 to-white z-10" />
+            <div className="absolute inset-0 bg-gradient-to-b from-brand-50/70 dark:from-zinc-950/70 via-white/90 dark:via-zinc-950/90 to-white dark:to-zinc-950 z-10" />
             <img 
               src="https://picsum.photos/seed/orchestra/1920/1080?blur=10" 
               alt="Background" 
-              className="w-full h-full object-cover opacity-15 md:opacity-20 grayscale"
+              className="w-full h-full object-cover opacity-15 md:opacity-20 grayscale dark:opacity-10"
               referrerPolicy="no-referrer"
             />
           </motion.div>
           
-          <div className="absolute inset-0 -z-10 bg-[radial-gradient(45%_45%_at_50%_50%,rgba(139,92,246,0.05)_0%,rgba(255,255,255,0)_100%)]" />
+          <div className="absolute inset-0 -z-10 bg-[radial-gradient(45%_45%_at_50%_50%,rgba(139,92,246,0.05)_0%,rgba(255,255,255,0)_100%)] dark:bg-[radial-gradient(45%_45%_at_50%_50%,rgba(139,92,246,0.1)_0%,rgba(0,0,0,0)_100%)]" />
           <div className="max-w-7xl mx-auto px-4 text-center">
             <motion.div
               initial="hidden"
@@ -241,7 +269,7 @@ export default function App() {
                   visible: { opacity: 1, y: 0 }
                 }}
                 transition={{ duration: 0.5 }}
-                className="inline-block px-4 py-1.5 mb-6 text-[10px] md:text-xs font-semibold tracking-widest text-brand-700 uppercase bg-brand-50 rounded-full border border-brand-100"
+                className="inline-block px-4 py-1.5 mb-6 text-[10px] md:text-xs font-semibold tracking-widest text-brand-700 dark:text-brand-400 uppercase bg-brand-50 dark:bg-brand-900/30 rounded-full border border-brand-100 dark:border-brand-800"
               >
                 Regência Estratégica para E-commerce
               </motion.span>
@@ -252,10 +280,10 @@ export default function App() {
                   visible: { opacity: 1, y: 0 }
                 }}
                 transition={{ duration: 0.7, ease: "easeOut" }}
-                className="text-4xl sm:text-5xl md:text-7xl font-extrabold text-brand-900 tracking-tight mb-6 md:mb-8 leading-[1.1]"
+                className="text-4xl sm:text-5xl md:text-7xl font-extrabold text-brand-900 dark:text-white tracking-tight mb-6 md:mb-8 leading-[1.1]"
               >
                 Sua operação de e-commerce <br className="hidden sm:block" />
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-400 to-brand-700">
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-400 to-brand-700 dark:from-brand-300 dark:to-brand-500">
                   em perfeita harmonia.
                 </span>
               </motion.h1>
@@ -266,7 +294,7 @@ export default function App() {
                   visible: { opacity: 1, y: 0 }
                 }}
                 transition={{ duration: 0.7, ease: "easeOut" }}
-                className="text-lg md:text-xl text-zinc-600 max-w-3xl mx-auto mb-8 md:mb-10 leading-relaxed px-2"
+                className="text-lg md:text-xl text-zinc-600 dark:text-zinc-400 max-w-3xl mx-auto mb-8 md:mb-10 leading-relaxed px-2"
               >
                 Há mais de 10 anos identificando gargalos e orquestrando o crescimento de lojas virtuais através de dados e inteligência de negócios.
               </motion.p>
@@ -289,8 +317,8 @@ export default function App() {
                     Falar com o Maesttro via WhatsApp
                   </motion.div>
                 </Button>
-                <div className="flex items-center gap-2 text-xs md:text-sm text-zinc-500">
-                  <ShieldCheck className="w-4 h-4 text-brand-600" />
+                <div className="flex items-center gap-2 text-xs md:text-sm text-zinc-500 dark:text-zinc-400">
+                  <ShieldCheck className="w-4 h-4 text-brand-600 dark:text-brand-400" />
                   Foco em Lucro e Eficiência (ROI)
                 </div>
               </motion.div>
@@ -298,10 +326,10 @@ export default function App() {
           </div>
         </section>
 
-        {/* 2. SEÇÃO 'A ORQUESTRA ESTÁ DESAFINADA?' */}
-        <section id="problema" className="py-20 md:py-24 bg-brand-900 text-white">
+        {/* 2. SEÇÃO 'AFINE SUA ORQUESTRA' */}
+        <section id="harmonia" className="py-20 md:py-24 bg-brand-900 text-white">
           <div className="max-w-7xl mx-auto px-4">
-            <SectionTitle subtitle="Diagnóstico de Performance" light>A orquestra está desafinada?</SectionTitle>
+            <SectionTitle subtitle="Resultados Maesttro" light>Afine sua Orquestra</SectionTitle>
             <motion.div 
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -311,23 +339,23 @@ export default function App() {
             >
               {[
                 {
-                  title: "Baixa Conversão (CRO)",
-                  desc: "O tráfego chega, mas a performance de vendas não acompanha o investimento.",
+                  title: "Conversão Elevada (CRO)",
+                  desc: "Transformamos tráfego em vendas reais através de uma jornada de compra fluida e persuasiva.",
                   icon: TrendingUp
                 },
                 {
-                  title: "ROAS Negativo",
-                  desc: "Suas campanhas de Ads consomem o lucro sem gerar o retorno esperado sobre o investimento.",
+                  title: "ROAS Exponencial",
+                  desc: "Campanhas de Ads otimizadas para gerar o máximo de retorno sobre cada centavo investido.",
                   icon: Zap
                 },
                 {
-                  title: "Abandono de Carrinho",
-                  desc: "Fricções no checkout e falta de confiança fazem o cliente desistir no último compasso.",
+                  title: "Fidelização e Retenção",
+                  desc: "Estratégias que reduzem o abandono e transformam visitantes em clientes recorrentes.",
                   icon: Target
                 },
                 {
-                  title: "Falta de Clareza",
-                  desc: "Dados espalhados e dashboards complexos que não traduzem a realidade do seu lucro.",
+                  title: "Clareza de Dados",
+                  desc: "Dashboards inteligentes que traduzem números em decisões estratégicas para o seu lucro.",
                   icon: Activity
                 }
               ].map((item, i) => (
@@ -346,7 +374,7 @@ export default function App() {
         </section>
 
         {/* 3. SEÇÃO 'VISÃO 360º' */}
-        <section className="py-20 md:py-24 bg-white">
+        <section className="py-20 md:py-24 bg-white dark:bg-zinc-900 transition-colors duration-300">
           <div className="max-w-7xl mx-auto px-4">
             <motion.div 
               initial={{ opacity: 0, y: 30 }}
@@ -356,38 +384,38 @@ export default function App() {
               className="flex flex-col md:flex-row items-center gap-10 md:gap-16"
             >
               <div className="w-full md:w-1/2 order-2 md:order-1 text-center md:text-left">
-                <span className="text-brand-600 font-mono text-[10px] md:text-xs uppercase tracking-widest mb-4 block">Intervenção Estratégica</span>
-                <h2 className="text-3xl md:text-4xl font-bold mb-6 tracking-tight leading-tight">Visão 360º: Nós conhecemos cada engrenagem.</h2>
-                <p className="text-base md:text-lg text-zinc-600 mb-6 leading-relaxed">
-                  O diagnóstico da Maesttro não é superficial. Da escolha da plataforma à otimização do checkout, minha análise é baseada na vivência técnica de quem sabe como cada instrumento deve ser tocado.
+                <span className="text-brand-600 dark:text-brand-400 font-mono text-[10px] md:text-xs uppercase tracking-widest mb-4 block">Intervenção Estratégica</span>
+                <h2 className="text-3xl md:text-4xl font-bold mb-6 tracking-tight leading-tight dark:text-white">Visão 360º: Nós conhecemos cada engrenagem.</h2>
+                <p className="text-base md:text-lg text-zinc-600 dark:text-zinc-400 mb-6 leading-relaxed">
+                  O diagnóstico da Maesttro não é superficial. Da escolha da plataforma à otimização do checkout, nossa análise é baseada na vivência técnica de quem sabe como cada instrumento deve ser tocado.
                 </p>
-                <p className="text-base md:text-lg text-zinc-600 mb-8 leading-relaxed">
+                <p className="text-base md:text-lg text-zinc-600 dark:text-zinc-400 mb-8 leading-relaxed">
                   Analisamos profundamente todas as camadas do seu e-commerce: Plataforma, Conversão, Dados e Processos. Se você não tem quem execute, o Maestro aponta o caminho exato e valida cada etapa da execução para garantir a eficiência operacional.
                 </p>
                 <div className="flex items-center justify-center md:justify-start gap-4">
-                  <div className="p-3 bg-brand-50 rounded-xl">
-                    <ShieldCheck className="w-6 h-6 text-brand-600" />
+                  <div className="p-3 bg-brand-50 dark:bg-brand-900/20 rounded-xl">
+                    <ShieldCheck className="w-6 h-6 text-brand-600 dark:text-brand-400" />
                   </div>
-                  <span className="font-medium text-brand-900 text-sm md:text-base">Análise Técnica e Estratégica Completa</span>
+                  <span className="font-medium text-brand-900 dark:text-white text-sm md:text-base">Análise Técnica e Estratégica Completa</span>
                 </div>
               </div>
               <div className="w-full md:w-1/2 order-1 md:order-2">
                 <div className="grid grid-cols-2 gap-3 md:gap-4">
-                  <div className="aspect-square bg-zinc-100 rounded-2xl md:rounded-3xl flex flex-col items-center justify-center p-4 md:p-6 text-center hover:bg-brand-50 transition-colors group">
-                    <BarChart3 className="w-6 h-6 md:w-8 md:h-8 text-zinc-400 group-hover:text-brand-600 mb-2 md:mb-3" />
-                    <span className="text-[10px] md:text-sm font-bold text-brand-900 uppercase tracking-tight">Dados</span>
+                  <div className="aspect-square bg-zinc-100 dark:bg-zinc-800 rounded-2xl md:rounded-3xl flex flex-col items-center justify-center p-4 md:p-6 text-center hover:bg-brand-50 dark:hover:bg-brand-900/20 transition-colors group">
+                    <BarChart3 className="w-6 h-6 md:w-8 md:h-8 text-zinc-400 dark:text-zinc-500 group-hover:text-brand-600 dark:group-hover:text-brand-400 mb-2 md:mb-3" />
+                    <span className="text-[10px] md:text-sm font-bold text-brand-900 dark:text-zinc-100 uppercase tracking-tight">Dados</span>
                   </div>
-                  <div className="aspect-square bg-brand-900 rounded-2xl md:rounded-3xl flex flex-col items-center justify-center p-4 md:p-6 text-center hover:bg-brand-600 transition-colors group">
+                  <div className="aspect-square bg-brand-900 dark:bg-brand-800 rounded-2xl md:rounded-3xl flex flex-col items-center justify-center p-4 md:p-6 text-center hover:bg-brand-600 dark:hover:bg-brand-700 transition-colors group">
                     <Zap className="w-6 h-6 md:w-8 md:h-8 text-brand-500 group-hover:text-white mb-2 md:mb-3" />
                     <span className="text-[10px] md:text-sm font-bold text-white uppercase tracking-tight">Conversão</span>
                   </div>
-                  <div className="aspect-square bg-zinc-100 rounded-2xl md:rounded-3xl flex flex-col items-center justify-center p-4 md:p-6 text-center hover:bg-brand-50 transition-colors group">
-                    <Target className="w-6 h-6 md:w-8 md:h-8 text-zinc-400 group-hover:text-brand-600 mb-2 md:mb-3" />
-                    <span className="text-[10px] md:text-sm font-bold text-brand-900 uppercase tracking-tight">Processos</span>
+                  <div className="aspect-square bg-zinc-100 dark:bg-zinc-800 rounded-2xl md:rounded-3xl flex flex-col items-center justify-center p-4 md:p-6 text-center hover:bg-brand-50 dark:hover:bg-brand-900/20 transition-colors group">
+                    <Target className="w-6 h-6 md:w-8 md:h-8 text-zinc-400 dark:text-zinc-500 group-hover:text-brand-600 dark:group-hover:text-brand-400 mb-2 md:mb-3" />
+                    <span className="text-[10px] md:text-sm font-bold text-brand-900 dark:text-zinc-100 uppercase tracking-tight">Processos</span>
                   </div>
-                  <div className="aspect-square bg-zinc-100 rounded-2xl md:rounded-3xl flex flex-col items-center justify-center p-4 md:p-6 text-center hover:bg-brand-50 transition-colors group">
-                    <ShieldCheck className="w-6 h-6 md:w-8 md:h-8 text-zinc-400 group-hover:text-brand-600 mb-2 md:mb-3" />
-                    <span className="text-[10px] md:text-sm font-bold text-brand-900 uppercase tracking-tight">Plataforma</span>
+                  <div className="aspect-square bg-zinc-100 dark:bg-zinc-800 rounded-2xl md:rounded-3xl flex flex-col items-center justify-center p-4 md:p-6 text-center hover:bg-brand-50 dark:hover:bg-brand-900/20 transition-colors group">
+                    <ShieldCheck className="w-6 h-6 md:w-8 md:h-8 text-zinc-400 dark:text-zinc-500 group-hover:text-brand-600 dark:group-hover:text-brand-400 mb-2 md:mb-3" />
+                    <span className="text-[10px] md:text-sm font-bold text-brand-900 dark:text-zinc-100 uppercase tracking-tight">Plataforma</span>
                   </div>
                 </div>
               </div>
@@ -396,7 +424,7 @@ export default function App() {
         </section>
 
         {/* 4. O MÉTODO MAESTTRO (Os 3 Atos) */}
-        <section id="metodo" className="py-20 md:py-24">
+        <section id="metodo" className="py-20 md:py-24 bg-brand-50/50 dark:bg-zinc-950 transition-colors duration-700 ease-in-out">
           <div className="max-w-7xl mx-auto px-4">
             <SectionTitle subtitle="Metodologia Exclusiva">O Método MAESTTRO: Os 3 Atos</SectionTitle>
             <div className="grid md:grid-cols-3 gap-8 md:gap-12">
@@ -430,17 +458,17 @@ export default function App() {
                   viewport={{ once: true }}
                   transition={{ duration: 0.5, delay: i * 0.1 }}
                   whileHover={{ y: -10, scale: 1.02 }}
-                  className="relative p-6 md:p-8 rounded-3xl bg-white border border-zinc-100 shadow-sm hover:shadow-2xl hover:border-brand-200 transition-all group"
+                  className="relative p-6 md:p-8 rounded-3xl bg-white dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 shadow-sm hover:shadow-2xl hover:border-brand-200 dark:hover:border-brand-500/30 transition-all group"
                 >
                   <div className="absolute -top-4 md:-top-6 left-6 md:left-8 w-10 h-10 md:w-12 md:h-12 bg-brand-600 text-white rounded-xl md:rounded-2xl flex items-center justify-center font-bold text-lg md:text-xl shadow-lg group-hover:scale-110 transition-transform">
                     {ato.id}
                   </div>
-                  <ato.icon className="w-10 h-10 md:w-12 md:h-12 text-brand-600 mb-4 md:mb-6 mt-4 group-hover:text-brand-700 transition-colors" />
-                  <h3 className="text-xl md:text-2xl font-bold mb-3 md:mb-4 text-brand-900">{ato.title}</h3>
-                  <p className="text-sm md:text-base text-zinc-600 mb-6 leading-relaxed">{ato.desc}</p>
+                  <ato.icon className="w-10 h-10 md:w-12 md:h-12 text-brand-600 dark:text-brand-400 mb-4 md:mb-6 mt-4 group-hover:text-brand-700 dark:group-hover:text-brand-300 transition-colors" />
+                  <h3 className="text-xl md:text-2xl font-bold mb-3 md:mb-4 text-brand-900 dark:text-white">{ato.title}</h3>
+                  <p className="text-sm md:text-base text-zinc-600 dark:text-zinc-400 mb-6 leading-relaxed">{ato.desc}</p>
                   <ul className="space-y-3">
                     {ato.items.map((li, idx) => (
-                      <li key={idx} className="flex items-center gap-3 text-xs md:text-sm text-zinc-700 font-medium">
+                      <li key={idx} className="flex items-center gap-3 text-xs md:text-sm text-zinc-700 dark:text-zinc-300 font-medium">
                         <CheckCircle2 className="w-4 h-4 text-brand-500 shrink-0" /> {li}
                       </li>
                     ))}
@@ -452,7 +480,7 @@ export default function App() {
         </section>
 
         {/* 5. POR QUE A MAESTTRO? */}
-        <section id="autoridade" className="py-20 md:py-24 bg-zinc-50">
+        <section id="autoridade" className="py-20 md:py-24 bg-zinc-50 dark:bg-zinc-900/50 transition-colors duration-700 ease-in-out">
           <div className="max-w-7xl mx-auto px-4">
             <motion.div 
               initial={{ opacity: 0, y: 30 }}
@@ -463,37 +491,37 @@ export default function App() {
             >
               <div className="w-full md:w-1/2">
                 <div className="relative">
-                  <div className="absolute -inset-4 bg-brand-600/10 rounded-3xl blur-2xl" />
+                  <div className="absolute -inset-4 bg-brand-600/10 dark:bg-brand-600/5 rounded-3xl blur-2xl" />
                   <img 
-                    src="https://picsum.photos/seed/maesttro/800/1000" 
+                    src="/img/foto_pedro_gui/pedro_gui_foto.jpeg" 
                     alt="O Maestro Estratégico" 
-                    className="relative rounded-3xl shadow-2xl grayscale hover:grayscale-0 transition-all duration-700 object-cover aspect-[4/5]"
+                    className="relative rounded-3xl shadow-2xl grayscale hover:grayscale-0 transition-all duration-700 object-cover aspect-[4/5] dark:opacity-80"
                     referrerPolicy="no-referrer"
                   />
-                  <div className="absolute bottom-4 md:bottom-8 -right-4 md:-right-8 bg-white p-4 md:p-6 rounded-xl md:rounded-2xl shadow-xl border border-zinc-100 hidden sm:block">
-                    <Music className="w-6 h-6 md:w-8 md:h-8 text-brand-600 mb-2" />
-                    <p className="text-xs md:text-sm font-bold text-brand-900">Regência Estratégica</p>
-                    <p className="text-[10px] md:text-xs text-zinc-500">Performance em Harmonia</p>
+                  <div className="absolute bottom-4 md:bottom-8 -right-4 md:-right-8 bg-white dark:bg-zinc-800 p-4 md:p-6 rounded-xl md:rounded-2xl shadow-xl border border-zinc-100 dark:border-zinc-700 hidden sm:block">
+                    <Music className="w-6 h-6 md:w-8 md:h-8 text-brand-600 dark:text-brand-400 mb-2" />
+                    <p className="text-xs md:text-sm font-bold text-brand-900 dark:text-white">Regência Estratégica</p>
+                    <p className="text-[10px] md:text-xs text-zinc-500 dark:text-zinc-400">Performance em Harmonia</p>
                   </div>
                 </div>
               </div>
               <div className="w-full md:w-1/2 text-center md:text-left">
-                <span className="text-brand-600 font-mono text-[10px] md:text-xs uppercase tracking-widest mb-4 block">Diferenciais</span>
-                <h2 className="text-3xl md:text-4xl font-bold mb-6 tracking-tight leading-tight">Por que a MAESTTRO?</h2>
-                <p className="text-base md:text-lg text-zinc-600 mb-6 leading-relaxed">
+                <span className="text-brand-600 dark:text-brand-400 font-mono text-[10px] md:text-xs uppercase tracking-widest mb-4 block">Diferenciais</span>
+                <h2 className="text-3xl md:text-4xl font-bold mb-6 tracking-tight leading-tight dark:text-white">Por que a MAESTTRO?</h2>
+                <p className="text-base md:text-lg text-zinc-600 dark:text-zinc-400 mb-6 leading-relaxed">
                   O Maestro é aquele que domina a técnica de cada instrumento, mas escolhe reger para garantir que o resultado final seja uma sinfonia de lucros. Atuamos desde 2018 com uma visão crítica sobre plataformas e foco total em ROI.
                 </p>
-                <p className="text-base md:text-lg text-zinc-600 mb-8 leading-relaxed">
+                <p className="text-base md:text-lg text-zinc-600 dark:text-zinc-400 mb-8 leading-relaxed">
                   Nossa entrega é baseada em eficiência operacional. Não aceitamos resultados medianos; buscamos a excelência técnica para que sua loja virtual performe no topo do mercado.
                 </p>
                 <div className="grid grid-cols-2 gap-4 md:gap-6 mb-8">
                   <div>
-                    <div className="text-2xl md:text-3xl font-bold text-brand-900">Desde 2018</div>
-                    <div className="text-[10px] md:text-sm text-zinc-500 uppercase tracking-wider">Experiência Real</div>
+                    <div className="text-2xl md:text-3xl font-bold text-brand-900 dark:text-white">Desde 2018</div>
+                    <div className="text-[10px] md:text-sm text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Experiência Real</div>
                   </div>
                   <div>
-                    <div className="text-2xl md:text-3xl font-bold text-brand-900">Visão 360º</div>
-                    <div className="text-[10px] md:text-sm text-zinc-500 uppercase tracking-wider">Foco em ROI</div>
+                    <div className="text-2xl md:text-3xl font-bold text-brand-900 dark:text-white">Visão 360º</div>
+                    <div className="text-[10px] md:text-sm text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Foco em ROI</div>
                   </div>
                 </div>
                 <Button primary className="mx-auto md:mx-0" onClick={handleWhatsAppClick}>
@@ -505,7 +533,7 @@ export default function App() {
         </section>
 
         {/* 6. DEPOIMENTOS (Testimonials) */}
-        <section id="depoimentos" className="py-20 md:py-24 bg-white overflow-hidden">
+        <section id="depoimentos" className="py-20 md:py-24 bg-white dark:bg-zinc-900 overflow-hidden transition-colors duration-700 ease-in-out">
           <div className="max-w-7xl mx-auto px-4">
             <SectionTitle subtitle="Vozes da Experiência">Sinfonia de Resultados</SectionTitle>
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
@@ -535,22 +563,22 @@ export default function App() {
                   whileInView={{ opacity: 1, scale: 1 }}
                   viewport={{ once: true }}
                   transition={{ duration: 0.5, delay: i * 0.1 }}
-                  className="p-6 md:p-8 rounded-3xl bg-zinc-50 border border-zinc-100 relative group hover:bg-white hover:shadow-xl transition-all duration-300"
+                  className="p-6 md:p-8 rounded-3xl bg-zinc-50 dark:bg-zinc-800 border border-zinc-100 dark:border-zinc-700 relative group hover:bg-white dark:hover:bg-zinc-700 hover:shadow-xl transition-all duration-300"
                 >
-                  <Quote className="absolute top-4 md:top-6 right-6 md:right-8 w-6 h-6 md:w-8 md:h-8 text-brand-100 group-hover:text-brand-200 transition-colors" />
+                  <Quote className="absolute top-4 md:top-6 right-6 md:right-8 w-6 h-6 md:w-8 md:h-8 text-brand-100 dark:text-zinc-700 group-hover:text-brand-200 dark:group-hover:text-zinc-600 transition-colors" />
                   <div className="flex items-center gap-4 mb-4 md:mb-6">
                     <img 
                       src={testimonial.image} 
                       alt={testimonial.author} 
-                      className="w-10 h-10 md:w-12 md:h-12 rounded-full object-cover border-2 border-white shadow-sm"
+                      className="w-10 h-10 md:w-12 md:h-12 rounded-full object-cover border-2 border-white dark:border-zinc-600 shadow-sm"
                       referrerPolicy="no-referrer"
                     />
                     <div>
-                      <h4 className="font-bold text-sm md:text-base text-brand-900">{testimonial.author}</h4>
-                      <p className="text-[10px] md:text-xs text-zinc-500 font-medium uppercase tracking-wider">{testimonial.role}</p>
+                      <h4 className="font-bold text-sm md:text-base text-brand-900 dark:text-white">{testimonial.author}</h4>
+                      <p className="text-[10px] md:text-xs text-zinc-500 dark:text-zinc-400 font-medium uppercase tracking-wider">{testimonial.role}</p>
                     </div>
                   </div>
-                  <p className="text-sm md:text-base text-zinc-600 italic leading-relaxed">
+                  <p className="text-sm md:text-base text-zinc-600 dark:text-zinc-300 italic leading-relaxed">
                     "{testimonial.quote}"
                   </p>
                   <div className="mt-6 flex gap-1">
@@ -565,7 +593,7 @@ export default function App() {
         </section>
 
         {/* 7. FAQ */}
-        <section className="py-20 md:py-24">
+        <section className="py-20 md:py-24 bg-white dark:bg-zinc-950 transition-colors duration-700 ease-in-out">
           <div className="max-w-3xl mx-auto px-4">
             <SectionTitle subtitle="Dúvidas Frequentes">Esclarecimentos Estratégicos</SectionTitle>
             <motion.div 
@@ -596,7 +624,7 @@ export default function App() {
         </section>
 
         {/* FOOTER / CTA FINAL */}
-        <section className="py-20 md:py-24 bg-brand-900 text-white relative overflow-hidden">
+        <section className="py-20 md:py-24 bg-brand-900 dark:bg-zinc-900 text-white relative overflow-hidden transition-colors duration-700 ease-in-out">
           <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-brand-500 to-brand-700" />
           <motion.div 
             initial={{ opacity: 0, y: 40 }}
@@ -606,7 +634,7 @@ export default function App() {
             className="max-w-7xl mx-auto px-4 text-center relative z-10"
           >
             <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-6 md:mb-8 tracking-tight leading-tight">A regência estratégica que o seu <br className="hidden md:block" /> e-commerce precisa para escalar.</h2>
-            <p className="text-lg md:text-xl text-zinc-400 mb-10 md:mb-12 max-w-2xl mx-auto px-4">
+            <p className="text-lg md:text-xl text-zinc-400 dark:text-zinc-500 mb-10 md:mb-12 max-w-2xl mx-auto px-4">
               Não deixe sua operação desafinar. Agende seu diagnóstico hoje mesmo.
             </p>
             <Button primary className="mx-auto text-base md:text-lg py-4 px-8 md:px-10" onClick={handleWhatsAppClick}>
@@ -614,24 +642,57 @@ export default function App() {
               Falar com o Maesttro via WhatsApp
             </Button>
             
-            <div className="mt-20 md:mt-24 pt-8 border-t border-white/10 flex flex-col md:flex-row justify-between items-center gap-8">
+            <div className="mt-20 md:mt-24 pt-8 border-t border-white/10 dark:border-zinc-800 flex flex-col md:flex-row justify-between items-center gap-8">
               <div className="flex items-center gap-2">
                 <Logo className="w-8 h-8" />
-                <span className="font-jakarta font-bold text-lg tracking-tight uppercase">
+                <span className="font-outfit font-bold text-lg tracking-tight uppercase">
                   Maes<span className="text-brand-600">tt</span>ro
                 </span>
               </div>
-              <div className="text-zinc-500 text-xs md:text-sm text-center md:text-left">
+              <div className="text-zinc-500 dark:text-zinc-600 text-xs md:text-sm text-center md:text-left">
                 © 2024 Maesttro - Regência Estratégica de E-commerce. <br className="md:hidden" /> Todos os direitos reservados.
               </div>
-              <div className="flex gap-6 text-zinc-400 text-sm">
-                <a href="#" className="hover:text-white transition-colors">Privacidade</a>
-                <a href="#" className="hover:text-white transition-colors">Termos</a>
+              <div className="flex flex-wrap justify-center gap-6 text-zinc-400 dark:text-zinc-500 text-sm">
+                <button onClick={() => navigate('/area-cliente')} className="hover:text-white dark:hover:text-brand-400 transition-colors">Área do Cliente</button>
+                <a href="#" className="hover:text-white dark:hover:text-brand-400 transition-colors">Privacidade</a>
+                <a href="#" className="hover:text-white dark:hover:text-brand-400 transition-colors">Termos</a>
               </div>
             </div>
           </motion.div>
         </section>
       </main>
     </div>
+  );
+}
+
+export default function App() {
+  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
+    if (typeof window !== 'undefined') {
+      const savedTheme = localStorage.getItem('theme');
+      return (savedTheme as 'light' | 'dark') || 'light';
+    }
+    return 'light';
+  });
+
+  useEffect(() => {
+    if (theme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+    localStorage.setItem('theme', theme);
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme(prev => prev === 'light' ? 'dark' : 'light');
+  };
+
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<LandingPage theme={theme} toggleTheme={toggleTheme} />} />
+        <Route path="/area-cliente" element={<ClientArea />} />
+      </Routes>
+    </BrowserRouter>
   );
 }
