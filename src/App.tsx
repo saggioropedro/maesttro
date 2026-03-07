@@ -3,9 +3,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route, useNavigate } from 'react-router-dom';
-import ClientArea from './pages/ClientArea';
+
+const ClientArea = lazy(() => import('./pages/ClientArea'));
+
 import { 
   MessageCircle, 
   TrendingUp, 
@@ -35,14 +37,15 @@ const WHATSAPP_NUMBER = "5511999389334";
 const WHATSAPP_LINK = `https://wa.me/${WHATSAPP_NUMBER}?text=Olá! Gostaria de falar com o Maesttro sobre a performance do meu e-commerce.`;
 
 // Logo Component
-const Logo = ({ className = "w-8 h-8 md:w-10 md:h-10" }: { className?: string }) => {
+const Logo = ({ className = "w-8 h-8 md:w-10 md:h-10", white = false }: { className?: string, white?: boolean }) => {
   return (
-    <div className={`${className} flex items-center justify-center overflow-hidden`}>
+    <div className={`${className} flex items-center justify-center`}>
       <img 
         src="/img/logo/logo_maesttro_roxo.png" 
         alt="Maesttro Logo" 
-        className="w-full h-full object-contain"
+        className={`w-full h-full object-contain ${white ? 'grayscale invert brightness-[200%] contrast-[200%] mix-blend-screen' : ''}`}
         referrerPolicy="no-referrer"
+        fetchPriority="high"
       />
     </div>
   );
@@ -106,6 +109,9 @@ function LandingPage({ theme, toggleTheme }: { theme: 'light' | 'dark', toggleTh
   const navigate = useNavigate();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [showLogoTooltip, setShowLogoTooltip] = useState(false);
+  const carouselRef = useRef<HTMLDivElement>(null);
+  const [carouselConstraints, setCarouselConstraints] = useState({ left: 0, right: 0 });
+  const [activeTestimonialIndex, setActiveTestimonialIndex] = useState(0);
 
   const heroRef = useRef<HTMLElement>(null);
   const { scrollYProgress } = useScroll({
@@ -119,6 +125,20 @@ function LandingPage({ theme, toggleTheme }: { theme: 'light' | 'dark', toggleTh
     window.open(WHATSAPP_LINK, '_blank');
   };
 
+  useEffect(() => {
+    const updateConstraints = () => {
+      if (carouselRef.current) {
+        const scrollWidth = carouselRef.current.scrollWidth;
+        const offsetWidth = carouselRef.current.offsetWidth;
+        setCarouselConstraints({ left: -(scrollWidth - offsetWidth), right: 0 });
+      }
+    };
+
+    updateConstraints();
+    window.addEventListener('resize', updateConstraints);
+    return () => window.removeEventListener('resize', updateConstraints);
+  }, []);
+
   return (
     <div className="min-h-screen bg-brand-50 dark:bg-zinc-950 font-sans text-brand-900 dark:text-zinc-100 selection:bg-brand-100 dark:selection:bg-brand-900 selection:text-brand-900 dark:selection:text-white transition-colors duration-700 ease-in-out">
       {/* 1. HEADER */}
@@ -129,7 +149,7 @@ function LandingPage({ theme, toggleTheme }: { theme: 'light' | 'dark', toggleTh
             onMouseEnter={() => setShowLogoTooltip(true)}
             onMouseLeave={() => setShowLogoTooltip(false)}
           >
-            <Logo />
+            <Logo white={theme === 'dark'} />
             <span className="font-outfit font-bold text-lg md:text-xl tracking-tight uppercase dark:text-white">
               Maes<span className="text-brand-600">tt</span>ro
             </span>
@@ -168,7 +188,7 @@ function LandingPage({ theme, toggleTheme }: { theme: 'light' | 'dark', toggleTh
             </button>
 
             <Button 
-              className="flex text-[10px] sm:text-sm py-1.5 px-3 sm:py-2 sm:px-4 border-brand-200 dark:border-zinc-700 text-brand-900 dark:text-zinc-100 hover:bg-brand-50 dark:hover:bg-zinc-800" 
+              className="hidden md:flex text-sm py-2 px-4 border-brand-200 dark:border-zinc-700 text-brand-900 dark:text-zinc-100 hover:bg-brand-50 dark:hover:bg-zinc-800" 
               onClick={() => navigate('/area-cliente')}
             >
               Área do Cliente
@@ -176,10 +196,20 @@ function LandingPage({ theme, toggleTheme }: { theme: 'light' | 'dark', toggleTh
             
             {/* Mobile Menu Toggle */}
             <button 
-              className="md:hidden p-2 text-brand-900"
+              className="md:hidden p-2 text-brand-900 dark:text-white relative z-50"
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
             >
-              {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={isMobileMenuOpen ? 'close' : 'menu'}
+                  initial={{ opacity: 0, rotate: -90 }}
+                  animate={{ opacity: 1, rotate: 0 }}
+                  exit={{ opacity: 0, rotate: 90 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+                </motion.div>
+              </AnimatePresence>
             </button>
           </div>
         </div>
@@ -188,30 +218,71 @@ function LandingPage({ theme, toggleTheme }: { theme: 'light' | 'dark', toggleTh
         <AnimatePresence>
           {isMobileMenuOpen && (
             <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
-              className="md:hidden bg-white dark:bg-zinc-900 border-b border-brand-100 dark:border-zinc-800 overflow-hidden"
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.3, ease: "circOut" }}
+              className="md:hidden fixed inset-0 top-16 bg-white/98 dark:bg-zinc-950/98 backdrop-blur-xl z-40 overflow-y-auto"
             >
-              <nav className="flex flex-col p-4 gap-4 text-base font-medium text-zinc-600 dark:text-zinc-400">
-                <a href="#harmonia" onClick={() => setIsMobileMenuOpen(false)} className="py-2 hover:text-brand-900 dark:hover:text-white border-b border-zinc-50 dark:border-zinc-800">Harmonia</a>
-                <a href="#metodo" onClick={() => setIsMobileMenuOpen(false)} className="py-2 hover:text-brand-900 dark:hover:text-white border-b border-zinc-50 dark:border-zinc-800">O Método</a>
-                <a href="#depoimentos" onClick={() => setIsMobileMenuOpen(false)} className="py-2 hover:text-brand-900 dark:hover:text-white border-b border-zinc-50 dark:border-zinc-800">Depoimentos</a>
-                <a href="#autoridade" onClick={() => setIsMobileMenuOpen(false)} className="py-2 hover:text-brand-900 dark:hover:text-white border-b border-zinc-50 dark:border-zinc-800">O Maestro</a>
-                
-                <div className="flex items-center justify-between py-2 border-b border-zinc-50 dark:border-zinc-800">
-                  <span className="text-sm">Tema</span>
-                  <button
-                    onClick={toggleTheme}
-                    className="p-2 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400"
+              <nav className="flex flex-col p-6 gap-2">
+                {[
+                  { label: "Harmonia", href: "#harmonia", icon: Music },
+                  { label: "O Método", href: "#metodo", icon: Target },
+                  { label: "Depoimentos", href: "#depoimentos", icon: Quote },
+                  { label: "O Maestro", href: "#autoridade", icon: Star },
+                ].map((item, i) => (
+                  <motion.a
+                    key={item.label}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: i * 0.05 + 0.1 }}
+                    href={item.href}
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="flex items-center gap-4 py-5 px-4 rounded-2xl hover:bg-brand-50 dark:hover:bg-brand-900/20 text-lg font-bold text-zinc-800 dark:text-zinc-200 transition-colors active:scale-[0.98]"
                   >
-                    {theme === 'light' ? <Moon className="w-5 h-5" /> : <Sun className="w-5 h-5" />}
-                  </button>
-                </div>
+                    <div className="w-12 h-12 rounded-xl bg-brand-50 dark:bg-brand-900/30 flex items-center justify-center text-brand-600 dark:text-brand-400">
+                      <item.icon className="w-6 h-6" />
+                    </div>
+                    {item.label}
+                  </motion.a>
+                ))}
+                
+                <motion.div 
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.4 }}
+                  className="mt-6 pt-6 border-t border-zinc-100 dark:border-zinc-800"
+                >
+                  <div className="flex items-center justify-between p-5 bg-zinc-50 dark:bg-zinc-900 rounded-2xl border border-zinc-100 dark:border-zinc-800">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-white dark:bg-zinc-800 rounded-lg shadow-sm">
+                        {theme === 'light' ? <Sun className="w-5 h-5 text-amber-500" /> : <Moon className="w-5 h-5 text-brand-400" />}
+                      </div>
+                      <span className="font-bold text-zinc-900 dark:text-white">Modo {theme === 'light' ? 'Claro' : 'Escuro'}</span>
+                    </div>
+                    <button
+                      onClick={toggleTheme}
+                      className="relative w-12 h-6 bg-zinc-200 dark:bg-zinc-700 rounded-full transition-colors"
+                    >
+                      <motion.div 
+                        animate={{ x: theme === 'light' ? 4 : 28 }}
+                        className="absolute top-1 left-0 w-4 h-4 bg-white rounded-full shadow-sm"
+                      />
+                    </button>
+                  </div>
+                </motion.div>
 
-                <Button primary className="mt-2 w-full" onClick={() => { navigate('/area-cliente'); setIsMobileMenuOpen(false); }}>
-                  Área do Cliente
-                </Button>
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.5 }}
+                  className="mt-8"
+                >
+                  <Button primary className="w-full py-5 text-lg" onClick={handleWhatsAppClick}>
+                    <MessageCircle className="w-6 h-6" />
+                    Falar com o Maestro
+                  </Button>
+                </motion.div>
               </nav>
             </motion.div>
           )}
@@ -244,6 +315,7 @@ function LandingPage({ theme, toggleTheme }: { theme: 'light' | 'dark', toggleTh
               alt="Background" 
               className="w-full h-full object-cover opacity-15 md:opacity-20 grayscale dark:opacity-10"
               referrerPolicy="no-referrer"
+              fetchPriority="high"
             />
           </motion.div>
           
@@ -497,6 +569,7 @@ function LandingPage({ theme, toggleTheme }: { theme: 'light' | 'dark', toggleTh
                     alt="O Maestro Estratégico" 
                     className="relative rounded-3xl shadow-2xl grayscale hover:grayscale-0 transition-all duration-700 object-cover aspect-[4/5] dark:opacity-80"
                     referrerPolicy="no-referrer"
+                    loading="lazy"
                   />
                   <div className="absolute bottom-4 md:bottom-8 -right-4 md:-right-8 bg-white dark:bg-zinc-800 p-4 md:p-6 rounded-xl md:rounded-2xl shadow-xl border border-zinc-100 dark:border-zinc-700 hidden sm:block">
                     <Music className="w-6 h-6 md:w-8 md:h-8 text-brand-600 dark:text-brand-400 mb-2" />
@@ -536,58 +609,100 @@ function LandingPage({ theme, toggleTheme }: { theme: 'light' | 'dark', toggleTh
         <section id="depoimentos" className="py-20 md:py-24 bg-white dark:bg-zinc-900 overflow-hidden transition-colors duration-700 ease-in-out">
           <div className="max-w-7xl mx-auto px-4">
             <SectionTitle subtitle="Vozes da Experiência">Sinfonia de Resultados</SectionTitle>
-            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
-              {[
-                {
-                  quote: "A Maesttro transformou nossa operação. O diagnóstico inicial revelou gargalos que ignorávamos há anos. Hoje nossa conversão é outra.",
-                  author: "Ricardo Silva",
-                  role: "CEO da TechStore",
-                  image: "https://picsum.photos/seed/person1/100/100"
-                },
-                {
-                  quote: "A regência do Maestro trouxe a harmonia que nossa equipe precisava. O ROI subiu 40% em apenas 3 meses de acompanhamento estratégico.",
-                  author: "Amanda Costa",
-                  role: "Gerente de E-commerce na FashionHub",
-                  image: "https://picsum.photos/seed/person2/100/100"
-                },
-                {
-                  quote: "Finalmente temos clareza nos dados. A partitura estratégica é o nosso guia diário para o crescimento sustentável da nossa loja.",
-                  author: "Bruno Oliveira",
-                  role: "Fundador da BioVibe",
-                  image: "https://picsum.photos/seed/person3/100/100"
-                }
-              ].map((testimonial, i) => (
-                <motion.div
-                  key={i}
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  whileInView={{ opacity: 1, scale: 1 }}
-                  viewport={{ once: true }}
-                  transition={{ duration: 0.5, delay: i * 0.1 }}
-                  className="p-6 md:p-8 rounded-3xl bg-zinc-50 dark:bg-zinc-800 border border-zinc-100 dark:border-zinc-700 relative group hover:bg-white dark:hover:bg-zinc-700 hover:shadow-xl transition-all duration-300"
+            
+            <div className="relative">
+              <div className="overflow-visible" ref={carouselRef}>
+                <motion.div 
+                  className="flex gap-6 md:gap-8 cursor-grab active:cursor-grabbing"
+                  drag="x"
+                  dragConstraints={carouselConstraints}
+                  dragElastic={0.1}
+                  whileTap={{ cursor: "grabbing" }}
+                  dragTransition={{
+                    power: 0.2,
+                    timeConstant: 200,
+                    modifyTarget: (target) => {
+                      if (carouselRef.current) {
+                        const cardWidth = carouselRef.current.querySelector('.flex-shrink-0')?.clientWidth || 400;
+                        const gap = window.innerWidth >= 768 ? 32 : 24;
+                        const step = cardWidth + gap;
+                        return Math.round(target / step) * step;
+                      }
+                      return target;
+                    }
+                  }}
+                  onUpdate={(latest) => {
+                    if (typeof latest.x === 'number' && carouselRef.current) {
+                      const cardWidth = carouselRef.current.querySelector('.flex-shrink-0')?.clientWidth || 400;
+                      const gap = window.innerWidth >= 768 ? 32 : 24;
+                      const step = cardWidth + gap;
+                      const index = Math.min(Math.max(Math.round(Math.abs(latest.x) / step), 0), 2);
+                      if (index !== activeTestimonialIndex) {
+                        setActiveTestimonialIndex(index);
+                      }
+                    }
+                  }}
                 >
-                  <Quote className="absolute top-4 md:top-6 right-6 md:right-8 w-6 h-6 md:w-8 md:h-8 text-brand-100 dark:text-zinc-700 group-hover:text-brand-200 dark:group-hover:text-zinc-600 transition-colors" />
-                  <div className="flex items-center gap-4 mb-4 md:mb-6">
-                    <img 
-                      src={testimonial.image} 
-                      alt={testimonial.author} 
-                      className="w-10 h-10 md:w-12 md:h-12 rounded-full object-cover border-2 border-white dark:border-zinc-600 shadow-sm"
-                      referrerPolicy="no-referrer"
-                    />
-                    <div>
-                      <h4 className="font-bold text-sm md:text-base text-brand-900 dark:text-white">{testimonial.author}</h4>
-                      <p className="text-[10px] md:text-xs text-zinc-500 dark:text-zinc-400 font-medium uppercase tracking-wider">{testimonial.role}</p>
-                    </div>
-                  </div>
-                  <p className="text-sm md:text-base text-zinc-600 dark:text-zinc-300 italic leading-relaxed">
-                    "{testimonial.quote}"
-                  </p>
-                  <div className="mt-6 flex gap-1">
-                    {[...Array(5)].map((_, i) => (
-                      <Star key={i} className="w-3 h-3 md:w-4 md:h-4 text-brand-500 fill-brand-500" />
-                    ))}
-                  </div>
+                  {[
+                    {
+                      quote: "A Maesttro transformou nossa operação. O diagnóstico inicial revelou gargalos que ignorávamos há anos. Hoje nossa conversão é outra.",
+                      author: "Ricardo Silva",
+                      role: "CEO da TechStore",
+                      image: "https://picsum.photos/seed/person1/100/100"
+                    },
+                    {
+                      quote: "A regência do Maestro trouxe a harmonia que nossa equipe precisava. O ROI subiu 40% em apenas 3 meses de acompanhamento estratégico.",
+                      author: "Amanda Costa",
+                      role: "Gerente de E-commerce na FashionHub",
+                      image: "https://picsum.photos/seed/person2/100/100"
+                    },
+                    {
+                      quote: "Finalmente temos clareza nos dados. A partitura estratégica é o nosso guia diário para o crescimento sustentável da nossa loja.",
+                      author: "Bruno Oliveira",
+                      role: "Fundador da BioVibe",
+                      image: "https://picsum.photos/seed/person3/100/100"
+                    }
+                  ].map((testimonial, i) => (
+                    <motion.div
+                      key={i}
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      whileInView={{ opacity: 1, scale: 1 }}
+                      viewport={{ once: true }}
+                      transition={{ duration: 0.5, delay: i * 0.1 }}
+                      className="w-[85vw] sm:w-[400px] flex-shrink-0 p-6 md:p-8 rounded-3xl bg-zinc-50 dark:bg-zinc-800 border border-zinc-100 dark:border-zinc-700 relative group hover:bg-white dark:hover:bg-zinc-700 hover:shadow-xl transition-all duration-300"
+                    >
+                      <Quote className="absolute top-4 md:top-6 right-6 md:right-8 w-6 h-6 md:w-8 md:h-8 text-brand-100 dark:text-zinc-700 group-hover:text-brand-200 dark:group-hover:text-zinc-600 transition-colors" />
+                      <div className="flex items-center gap-4 mb-4 md:mb-6">
+                        <img 
+                          src={testimonial.image} 
+                          alt={testimonial.author} 
+                          className="w-10 h-10 md:w-12 md:h-12 rounded-full object-cover border-2 border-white dark:border-zinc-600 shadow-sm"
+                          referrerPolicy="no-referrer"
+                          loading="lazy"
+                        />
+                        <div>
+                          <h4 className="font-bold text-sm md:text-base text-brand-900 dark:text-white">{testimonial.author}</h4>
+                          <p className="text-[10px] md:text-xs text-zinc-500 dark:text-zinc-400 font-medium uppercase tracking-wider">{testimonial.role}</p>
+                        </div>
+                      </div>
+                      <p className="text-sm md:text-base text-zinc-600 dark:text-zinc-300 italic leading-relaxed">
+                        "{testimonial.quote}"
+                      </p>
+                      <div className="mt-6 flex gap-1">
+                        {[...Array(5)].map((_, i) => (
+                          <Star key={i} className="w-3 h-3 md:w-4 md:h-4 text-brand-500 fill-brand-500" />
+                        ))}
+                      </div>
+                    </motion.div>
+                  ))}
                 </motion.div>
-              ))}
+              </div>
+              
+              <div className="flex justify-center gap-2 mt-8">
+                {[0, 1, 2].map((i) => (
+                  <div key={i} className={`w-2 h-2 rounded-full transition-all duration-300 ${i === activeTestimonialIndex ? 'w-6 bg-brand-600' : 'bg-zinc-200 dark:bg-zinc-800'}`} />
+                ))}
+              </div>
             </div>
           </div>
         </section>
@@ -644,16 +759,16 @@ function LandingPage({ theme, toggleTheme }: { theme: 'light' | 'dark', toggleTh
             
             <div className="mt-20 md:mt-24 pt-8 border-t border-white/10 dark:border-zinc-800 flex flex-col md:flex-row justify-between items-center gap-8">
               <div className="flex items-center gap-2">
-                <Logo className="w-8 h-8" />
+                <Logo className="w-8 h-8" white={true} />
                 <span className="font-outfit font-bold text-lg tracking-tight uppercase">
-                  Maes<span className="text-brand-600">tt</span>ro
+                  Maes<span className="text-white">tt</span>ro
                 </span>
               </div>
               <div className="text-zinc-500 dark:text-zinc-600 text-xs md:text-sm text-center md:text-left">
                 © 2024 Maesttro - Regência Estratégica de E-commerce. <br className="md:hidden" /> Todos os direitos reservados.
               </div>
               <div className="flex flex-wrap justify-center gap-6 text-zinc-400 dark:text-zinc-500 text-sm">
-                <button onClick={() => navigate('/area-cliente')} className="hover:text-white dark:hover:text-brand-400 transition-colors">Área do Cliente</button>
+                <button onClick={() => navigate('/area-cliente')} className="hidden md:block hover:text-white dark:hover:text-brand-400 transition-colors">Área do Cliente</button>
                 <a href="#" className="hover:text-white dark:hover:text-brand-400 transition-colors">Privacidade</a>
                 <a href="#" className="hover:text-white dark:hover:text-brand-400 transition-colors">Termos</a>
               </div>
@@ -689,10 +804,16 @@ export default function App() {
 
   return (
     <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<LandingPage theme={theme} toggleTheme={toggleTheme} />} />
-        <Route path="/area-cliente" element={<ClientArea />} />
-      </Routes>
+      <Suspense fallback={
+        <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
+          <div className="w-12 h-12 border-4 border-brand-600 border-t-transparent rounded-full animate-spin" />
+        </div>
+      }>
+        <Routes>
+          <Route path="/" element={<LandingPage theme={theme} toggleTheme={toggleTheme} />} />
+          <Route path="/area-cliente" element={<ClientArea />} />
+        </Routes>
+      </Suspense>
     </BrowserRouter>
   );
 }
