@@ -383,103 +383,142 @@ const DashboardOverview = ({ onSelectProject }: { onSelectProject: (project: any
 
   return (
     <div className="space-y-8">
-      {/* Projects List */}
-      <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-100 dark:border-zinc-800 shadow-sm overflow-hidden">
-        <div className="p-6 border-b border-zinc-100 dark:border-zinc-800 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <h3 className="font-bold text-lg dark:text-white">Projetos Ativos</h3>
-          
-          <div className="flex flex-wrap gap-3">
-            <div className="flex items-center gap-2">
-              <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Status</span>
-              <select 
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                className="text-xs font-bold bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-brand-500/20 dark:text-white transition-all"
-              >
-                <option value="Todos">Todos</option>
-                <option value="Planejamento">Planejamento</option>
-                <option value="Em andamento">Em andamento</option>
-                <option value="Concluído">Concluído</option>
-              </select>
-            </div>
+      {/* Filters & Header */}
+      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
+        <div>
+          <h3 className="font-bold text-2xl dark:text-white tracking-tight">Projetos Ativos</h3>
+          <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">Visão geral da orquestração do seu e-commerce.</p>
+        </div>
+        
+        <div className="flex flex-wrap items-center gap-4 bg-white dark:bg-zinc-900 p-2 rounded-2xl border border-zinc-100 dark:border-zinc-800 shadow-sm">
+          <div className="flex items-center gap-2 px-3 border-r border-zinc-100 dark:border-zinc-800">
+            <Filter className="w-4 h-4 text-zinc-400" />
+            <select 
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="text-xs font-bold bg-transparent focus:outline-none dark:text-white cursor-pointer"
+            >
+              <option value="Todos">Todos os Status</option>
+              <option value="Planejamento">Planejamento</option>
+              <option value="Em andamento">Em andamento</option>
+              <option value="Concluído">Concluído</option>
+            </select>
+          </div>
 
-            <div className="flex items-center gap-2">
-              <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Prioridade</span>
-              <select 
-                value={priorityFilter}
-                onChange={(e) => setPriorityFilter(e.target.value)}
-                className="text-xs font-bold bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-brand-500/20 dark:text-white transition-all"
-              >
-                <option value="Todos">Todos</option>
-                <option value="Alta">Alta</option>
-                <option value="Média">Média</option>
-                <option value="Baixa">Baixa</option>
-                <option value="Crítica">Crítica</option>
-              </select>
-            </div>
+          <div className="flex items-center gap-2 px-3">
+            <Target className="w-4 h-4 text-zinc-400" />
+            <select 
+              value={priorityFilter}
+              onChange={(e) => setPriorityFilter(e.target.value)}
+              className="text-xs font-bold bg-transparent focus:outline-none dark:text-white cursor-pointer"
+            >
+              <option value="Todos">Todas as Prioridades</option>
+              <option value="Alta">Alta</option>
+              <option value="Média">Média</option>
+              <option value="Baixa">Baixa</option>
+              <option value="Crítica">Crítica</option>
+            </select>
           </div>
         </div>
+      </div>
 
-        <div className="divide-y divide-zinc-100 dark:divide-zinc-800">
-          {filteredProjects.length > 0 ? (
-            filteredProjects.map((p) => (
-              <div 
-                key={p.id} 
-                onClick={() => onSelectProject(p)}
-                className="p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors cursor-pointer"
-              >
-                <div className="flex items-center gap-4">
-                  <div className={`w-12 h-12 rounded-xl ${p.color} flex items-center justify-center text-white`}>
-                    <FolderKanban className="w-6 h-6" />
-                  </div>
-                  <div>
-                    <h4 className="font-bold text-zinc-900 dark:text-white">{p.name}</h4>
-                    <p className="text-xs text-zinc-500 dark:text-zinc-400">{p.status}</p>
-                  </div>
+      {/* Projects Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+        {filteredProjects.length > 0 ? (
+          filteredProjects.map((p) => (
+            <motion.div 
+              key={p.id} 
+              layoutId={`project-${p.id}`}
+              onClick={() => onSelectProject(p)}
+              whileHover={{ y: -4, shadow: "0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)" }}
+              className="bg-white dark:bg-zinc-900 rounded-[2rem] border border-zinc-100 dark:border-zinc-800 p-6 shadow-sm cursor-pointer transition-all group relative overflow-hidden"
+            >
+              {/* Decorative background element */}
+              <div className={`absolute top-0 right-0 w-32 h-32 -mr-16 -mt-16 rounded-full opacity-[0.03] dark:opacity-[0.05] transition-transform group-hover:scale-150 duration-700 ${p.color}`} />
+
+              <div className="flex justify-between items-start mb-6 relative z-10">
+                <div className={`w-14 h-14 rounded-2xl ${p.color} flex items-center justify-center text-white shadow-lg shadow-current/20`}>
+                  <FolderKanban className="w-7 h-7" />
                 </div>
-                <div className="flex-1 max-w-xs">
-                  <div className="flex justify-between text-[10px] font-bold mb-1 uppercase tracking-wider text-zinc-400">
-                    <span>Progresso</span>
-                    <span>{p.progress}%</span>
+                <div className="flex flex-col items-end">
+                  <span className={`text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-widest mb-2 ${
+                    p.priority === 'Alta' || p.priority === 'Crítica' ? 'bg-red-50 text-red-600 dark:bg-red-900/30 dark:text-red-400' :
+                    p.priority === 'Média' ? 'bg-amber-50 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400' :
+                    'bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400'
+                  }`}>
+                    {p.priority}
+                  </span>
+                  <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">{p.status}</span>
+                </div>
+              </div>
+
+              <div className="mb-6 relative z-10">
+                <h4 className="font-bold text-xl text-zinc-900 dark:text-white mb-2 group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-colors">{p.name}</h4>
+                <p className="text-xs text-zinc-500 dark:text-zinc-400 line-clamp-2 leading-relaxed">
+                  {p.description}
+                </p>
+              </div>
+
+              <div className="space-y-4 relative z-10">
+                <div>
+                  <div className="flex justify-between text-[10px] font-bold mb-2 uppercase tracking-wider text-zinc-400">
+                    <span>Progresso da Etapa</span>
+                    <span className="text-zinc-900 dark:text-white">{p.progress}%</span>
                   </div>
                   <div className="h-2 bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden">
                     <motion.div 
                       initial={{ width: 0 }}
                       animate={{ width: `${p.progress}%` }}
-                      className={`h-full ${p.color}`} 
+                      transition={{ duration: 1, ease: "easeOut" }}
+                      className={`h-full rounded-full ${p.color}`} 
                     />
                   </div>
                 </div>
-                <div className="flex items-center gap-3">
-                  <div className="flex -space-x-2">
-                    {[1, 2, 3].map(i => (
-                      <div key={i} className="w-8 h-8 rounded-full border-2 border-white dark:border-zinc-900 bg-zinc-200 dark:bg-zinc-700 flex items-center justify-center text-[10px] font-bold">
-                        U{i}
+
+                <div className="flex items-center justify-between pt-4 border-t border-zinc-50 dark:border-zinc-800">
+                  <div className="flex -space-x-3">
+                    {p.team.map((member, i) => (
+                      <div 
+                        key={i} 
+                        className="w-10 h-10 rounded-full border-4 border-white dark:border-zinc-900 bg-zinc-100 dark:bg-zinc-800 overflow-hidden relative group/avatar"
+                        title={member}
+                      >
+                        <img 
+                          src={`https://picsum.photos/seed/${member}/100/100`} 
+                          alt={member}
+                          className="w-full h-full object-cover grayscale hover:grayscale-0 transition-all duration-300"
+                          referrerPolicy="no-referrer"
+                        />
                       </div>
                     ))}
+                    <div className="w-10 h-10 rounded-full border-4 border-white dark:border-zinc-900 bg-brand-50 dark:bg-brand-900/30 flex items-center justify-center text-[10px] font-bold text-brand-600 dark:text-brand-400">
+                      +2
+                    </div>
                   </div>
-                  <button className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors">
-                    <MoreVertical className="w-4 h-4 text-zinc-400" />
-                  </button>
+                  
+                  <div className="flex items-center gap-2 text-zinc-400">
+                    <Clock className="w-4 h-4" />
+                    <span className="text-[10px] font-bold uppercase tracking-widest">{p.deadline}</span>
+                  </div>
                 </div>
               </div>
-            ))
-          ) : (
-            <div className="p-12 text-center">
-              <div className="w-16 h-16 bg-zinc-50 dark:bg-zinc-800 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Search className="w-8 h-8 text-zinc-300 dark:text-zinc-600" />
-              </div>
-              <h4 className="font-bold dark:text-white mb-1">Nenhum projeto encontrado</h4>
-              <p className="text-sm text-zinc-500 dark:text-zinc-400">Tente ajustar os filtros para encontrar o que procura.</p>
-              <button 
-                onClick={() => { setStatusFilter('Todos'); setPriorityFilter('Todos'); }}
-                className="mt-4 text-xs font-bold text-brand-600 hover:underline"
-              >
-                Limpar filtros
-              </button>
+            </motion.div>
+          ))
+        ) : (
+          <div className="col-span-full p-20 text-center bg-white dark:bg-zinc-900 rounded-[2rem] border border-zinc-100 dark:border-zinc-800">
+            <div className="w-20 h-20 bg-zinc-50 dark:bg-zinc-800 rounded-full flex items-center justify-center mx-auto mb-6">
+              <Search className="w-10 h-10 text-zinc-300 dark:text-zinc-600" />
             </div>
-          )}
-        </div>
+            <h4 className="font-bold text-xl dark:text-white mb-2">Nenhum projeto encontrado</h4>
+            <p className="text-sm text-zinc-500 dark:text-zinc-400 max-w-xs mx-auto">Tente ajustar os filtros de status ou prioridade para encontrar o que procura.</p>
+            <button 
+              onClick={() => { setStatusFilter('Todos'); setPriorityFilter('Todos'); }}
+              className="mt-6 px-6 py-2 bg-zinc-100 dark:bg-zinc-800 rounded-xl text-xs font-bold text-zinc-600 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-all"
+            >
+              Limpar todos os filtros
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -737,7 +776,8 @@ const KanbanBoard = ({ projectId }: { projectId: number }) => {
 };
 
 const CalendarView = () => {
-  const [currentDate, setCurrentDate] = useState(new Date(2026, 2, 5)); // Starting at March 2026 as per context
+  const [currentDate, setCurrentDate] = useState(new Date(2026, 2, 5)); // Starting at March 2026
+  const [selectedDate, setSelectedDate] = useState<number | null>(5);
   
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
@@ -749,71 +789,178 @@ const CalendarView = () => {
   
   const weekDays = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
   
-  // Get days in month
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const firstDayOfMonth = new Date(year, month, 1).getDay();
   
   const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
   const emptySlots = Array.from({ length: firstDayOfMonth }, (_, i) => i);
 
-  const nextMonth = () => {
-    setCurrentDate(new Date(year, month + 1, 1));
-  };
-
-  const prevMonth = () => {
-    setCurrentDate(new Date(year, month - 1, 1));
-  };
+  const nextMonth = () => setCurrentDate(new Date(year, month + 1, 1));
+  const prevMonth = () => setCurrentDate(new Date(year, month - 1, 1));
 
   const isToday = (day: number) => {
     const today = new Date(2026, 2, 5);
     return today.getDate() === day && today.getMonth() === month && today.getFullYear() === year;
   };
-  
+
+  // Helper to get events for a specific day
+  const getEventsForDay = (day: number) => {
+    const events = [];
+    
+    // Project Deadlines
+    PROJECTS.forEach(p => {
+      const [d, mStr, y] = p.deadline.split(' ');
+      const mIndex = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'].indexOf(mStr);
+      if (parseInt(d) === day && mIndex === month && parseInt(y) === year) {
+        events.push({ type: 'deadline', title: `Prazo: ${p.name}`, color: p.color, project: p.name });
+      }
+    });
+
+    // Hardcoded important dates for demo
+    if (month === 2 && year === 2026) {
+      if (day === 12) events.push({ type: 'meeting', title: 'Reunião ROI', color: 'bg-brand-600' });
+      if (day === 18) events.push({ type: 'launch', title: 'Lançamento Vtex', color: 'bg-blue-600' });
+      if (day === 5) events.push({ type: 'checkup', title: 'Check-up Semanal', color: 'bg-emerald-600' });
+    }
+
+    return events;
+  };
+
+  const selectedDayEvents = selectedDate ? getEventsForDay(selectedDate) : [];
+
   return (
-    <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-100 dark:border-zinc-800 shadow-sm p-6">
-      <div className="flex justify-between items-center mb-8">
-        <h3 className="text-xl font-bold dark:text-white">{monthNames[month]} {year}</h3>
-        <div className="flex gap-2">
-          <button 
-            onClick={prevMonth}
-            className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors text-zinc-500"
-          >
-            <ArrowLeft className="w-4 h-4" />
-          </button>
-          <button 
-            onClick={nextMonth}
-            className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors text-zinc-500"
-          >
-            <ArrowLeft className="w-4 h-4 rotate-180" />
-          </button>
+    <div className="grid grid-cols-1 xl:grid-cols-4 gap-8">
+      <div className="xl:col-span-3 space-y-6">
+        <div className="bg-white dark:bg-zinc-900 rounded-[2.5rem] border border-zinc-100 dark:border-zinc-800 shadow-sm overflow-hidden">
+          <div className="p-8 flex justify-between items-center border-b border-zinc-50 dark:border-zinc-800">
+            <div>
+              <h3 className="text-2xl font-bold dark:text-white tracking-tight">{monthNames[month]}</h3>
+              <p className="text-sm text-zinc-500 font-medium">{year}</p>
+            </div>
+            <div className="flex gap-3 bg-zinc-50 dark:bg-zinc-800 p-1.5 rounded-2xl">
+              <button 
+                onClick={prevMonth}
+                className="p-2.5 hover:bg-white dark:hover:bg-zinc-700 rounded-xl transition-all text-zinc-600 dark:text-zinc-400 shadow-sm hover:shadow-md"
+              >
+                <ArrowLeft className="w-5 h-5" />
+              </button>
+              <button 
+                onClick={() => setCurrentDate(new Date(2026, 2, 5))}
+                className="px-4 py-2 text-xs font-bold uppercase tracking-widest text-brand-600 hover:bg-white dark:hover:bg-zinc-700 rounded-xl transition-all"
+              >
+                Hoje
+              </button>
+              <button 
+                onClick={nextMonth}
+                className="p-2.5 hover:bg-white dark:hover:bg-zinc-700 rounded-xl transition-all text-zinc-600 dark:text-zinc-400 shadow-sm hover:shadow-md"
+              >
+                <ArrowLeft className="w-5 h-5 rotate-180" />
+              </button>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-7 gap-px bg-zinc-100 dark:bg-zinc-800">
+            {weekDays.map(d => (
+              <div key={d} className="bg-zinc-50 dark:bg-zinc-900 p-4 text-center text-[10px] font-bold text-zinc-400 uppercase tracking-widest">
+                {d}
+              </div>
+            ))}
+            {emptySlots.map(i => (
+              <div key={`empty-${i}`} className="bg-white dark:bg-zinc-900 p-4 h-28 md:h-36 opacity-30" />
+            ))}
+            {days.map(d => {
+              const events = getEventsForDay(d);
+              const isSel = selectedDate === d;
+              return (
+                <div 
+                  key={d} 
+                  onClick={() => setSelectedDate(d)}
+                  className={`bg-white dark:bg-zinc-900 p-3 h-28 md:h-36 relative transition-all cursor-pointer group border-2 ${
+                    isSel ? 'border-brand-500 z-10' : 'border-transparent hover:bg-zinc-50 dark:hover:bg-zinc-800/50'
+                  }`}
+                >
+                  <div className="flex justify-between items-start">
+                    <span className={`text-sm font-bold w-7 h-7 flex items-center justify-center rounded-full transition-colors ${
+                      isToday(d) 
+                        ? 'bg-brand-600 text-white shadow-lg shadow-brand-600/30' 
+                        : isSel ? 'text-brand-600' : 'text-zinc-400 group-hover:text-zinc-900 dark:group-hover:text-white'
+                    }`}>
+                      {d}
+                    </span>
+                    {events.length > 0 && (
+                      <div className="w-1.5 h-1.5 rounded-full bg-brand-500 animate-pulse" />
+                    )}
+                  </div>
+                  
+                  <div className="mt-2 space-y-1 overflow-hidden">
+                    {events.slice(0, 2).map((ev, idx) => (
+                      <div 
+                        key={idx} 
+                        className={`px-2 py-1 rounded-lg text-[9px] font-bold truncate border-l-2 ${ev.color.replace('bg-', 'border-')} ${ev.color.replace('bg-', 'bg-')}/10 ${ev.color.replace('bg-', 'text-')}`}
+                      >
+                        {ev.title}
+                      </div>
+                    ))}
+                    {events.length > 2 && (
+                      <div className="text-[8px] font-bold text-zinc-400 pl-1">
+                        + {events.length - 2} mais
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
       </div>
-      <div className="grid grid-cols-7 gap-px bg-zinc-100 dark:bg-zinc-800 rounded-xl overflow-hidden border border-zinc-100 dark:border-zinc-800">
-        {weekDays.map(d => (
-          <div key={d} className="bg-zinc-50 dark:bg-zinc-900 p-4 text-center text-xs font-bold text-zinc-400 uppercase tracking-widest">
-            {d}
-          </div>
-        ))}
-        {emptySlots.map(i => (
-          <div key={`empty-${i}`} className="bg-white dark:bg-zinc-900 p-4 h-24 md:h-32 opacity-20" />
-        ))}
-        {days.map(d => (
-          <div key={d} className="bg-white dark:bg-zinc-900 p-4 h-24 md:h-32 relative hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors cursor-pointer group">
-            <span className={`text-sm font-bold ${isToday(d) ? 'text-brand-600' : 'text-zinc-400 group-hover:text-zinc-900 dark:group-hover:text-white'}`}>
-              {d}
-            </span>
-            {month === 2 && year === 2026 && d === 12 && (
-              <div className="mt-2 p-1.5 bg-brand-100 dark:bg-brand-900/30 border-l-2 border-brand-600 rounded text-[10px] font-bold text-brand-700 dark:text-brand-400 truncate">
-                Reunião ROI
+
+      <div className="space-y-6">
+        <div className="bg-white dark:bg-zinc-900 rounded-3xl border border-zinc-100 dark:border-zinc-800 p-6 shadow-sm">
+          <h4 className="font-bold text-lg dark:text-white mb-6 flex items-center gap-2">
+            <Calendar className="w-5 h-5 text-brand-600" />
+            {selectedDate ? `Eventos em ${selectedDate} de ${monthNames[month]}` : 'Selecione um dia'}
+          </h4>
+          
+          <div className="space-y-4">
+            {selectedDayEvents.length > 0 ? (
+              selectedDayEvents.map((ev, i) => (
+                <motion.div 
+                  initial={{ opacity: 0, x: 10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  key={i} 
+                  className="p-4 rounded-2xl bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-100 dark:border-zinc-700 flex items-start gap-4 group"
+                >
+                  <div className={`w-10 h-10 rounded-xl ${ev.color} flex items-center justify-center text-white shadow-lg shadow-current/10 shrink-0`}>
+                    {ev.type === 'deadline' ? <Clock className="w-5 h-5" /> : <Target className="w-5 h-5" />}
+                  </div>
+                  <div>
+                    <p className="text-xs font-bold text-zinc-900 dark:text-white leading-tight">{ev.title}</p>
+                    <p className="text-[10px] text-zinc-500 mt-1 uppercase tracking-widest font-medium">
+                      {ev.type === 'deadline' ? 'Prazo Final' : 'Evento Agendado'}
+                    </p>
+                  </div>
+                </motion.div>
+              ))
+            ) : (
+              <div className="py-12 text-center">
+                <div className="w-12 h-12 bg-zinc-50 dark:bg-zinc-800 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Timer className="w-6 h-6 text-zinc-300" />
+                </div>
+                <p className="text-xs text-zinc-500 font-medium">Nenhum evento para este dia.</p>
               </div>
             )}
-            {month === 2 && year === 2026 && d === 18 && (
-              <div className="mt-2 p-1.5 bg-blue-100 dark:bg-blue-900/30 border-l-2 border-blue-600 rounded text-[10px] font-bold text-blue-700 dark:text-blue-400 truncate">
-                Lançamento Vtex
-              </div>
-            )}
           </div>
-        ))}
+        </div>
+
+        <div className="bg-brand-900 rounded-3xl p-6 text-white overflow-hidden relative group">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-brand-600 rounded-full -mr-16 -mt-16 opacity-20 blur-2xl group-hover:scale-150 transition-transform duration-700" />
+          <h4 className="font-bold mb-2 relative z-10">Próximo Marco</h4>
+          <p className="text-xs text-brand-200 mb-4 relative z-10">Otimização Checkout Vtex</p>
+          <div className="flex items-center gap-2 relative z-10">
+            <Clock className="w-4 h-4 text-brand-400" />
+            <span className="text-sm font-bold">Em 18 dias</span>
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -914,11 +1061,16 @@ const ProjectDetails = ({ project }: { project: any }) => (
             <h4 className="text-sm font-bold text-zinc-900 dark:text-white mb-3 uppercase tracking-wider">Equipe Alocada</h4>
             <div className="flex gap-3">
               {project.team.map((member: string, i: number) => (
-                <div key={i} className="flex items-center gap-2 bg-zinc-50 dark:bg-zinc-800 px-3 py-1.5 rounded-full border border-zinc-100 dark:border-zinc-700">
-                  <div className="w-6 h-6 rounded-full bg-brand-600 flex items-center justify-center text-[10px] text-white font-bold">
-                    {member.split(' ').map(n => n[0]).join('')}
+                <div key={i} className="flex items-center gap-2 bg-zinc-50 dark:bg-zinc-800 pl-1.5 pr-3 py-1.5 rounded-full border border-zinc-100 dark:border-zinc-700 group cursor-help" title={member}>
+                  <div className="w-8 h-8 rounded-full bg-brand-600 overflow-hidden border-2 border-white dark:border-zinc-700">
+                    <img 
+                      src={`https://picsum.photos/seed/${member}/100/100`} 
+                      alt={member}
+                      className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all"
+                      referrerPolicy="no-referrer"
+                    />
                   </div>
-                  <span className="text-xs font-medium text-zinc-700 dark:text-zinc-300">{member}</span>
+                  <span className="text-xs font-bold text-zinc-700 dark:text-zinc-300">{member}</span>
                 </div>
               ))}
             </div>

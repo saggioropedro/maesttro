@@ -1,9 +1,10 @@
-@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300..700&family=Outfit:wght@300..900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300..700&family=Outfit:wght@300..900&family=Montserrat:wght@300..900&display=swap');
 @import "tailwindcss";
 
 @theme {
   --font-space: "Space Grotesk", sans-serif;
   --font-outfit: "Outfit", sans-serif;
+  --font-montserrat: "Montserrat", sans-serif;
   --color-brand-50: #f5f3ff;
   --color-brand-100: #ede9fe;
   --color-brand-400: #a78bfa;

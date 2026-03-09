@@ -17,6 +17,8 @@ import {
   CheckCircle2, 
   ChevronDown, 
   ChevronUp,
+  ChevronLeft,
+  ChevronRight,
   BarChart3,
   Target,
   Zap,
@@ -28,10 +30,16 @@ import {
   Star,
   Menu,
   X,
+  Globe,
+  Code,
+  Database,
+  Rocket,
   Sun,
-  Moon
+  Moon,
+  ShoppingBag,
+  Users
 } from 'lucide-react';
-import { motion, AnimatePresence, useScroll, useTransform } from 'motion/react';
+import { motion, AnimatePresence, useScroll, useTransform, useInView, animate, useMotionValue } from 'motion/react';
 
 const WHATSAPP_NUMBER = "5511999389334";
 const WHATSAPP_LINK = `https://wa.me/${WHATSAPP_NUMBER}?text=Olá! Gostaria de falar com o Maesttro sobre a performance do meu e-commerce.`;
@@ -65,7 +73,7 @@ const Button = ({ children, className = "", primary = false, onClick }: { childr
   </button>
 );
 
-const SectionTitle = ({ children, subtitle, light = false }: { children: React.ReactNode, subtitle?: string, light?: boolean }) => (
+const SectionTitle = ({ children, subtitle, light = false }: { children: React.ReactNode, subtitle?: React.ReactNode, light?: boolean }) => (
   <motion.div 
     initial={{ opacity: 0, y: 20 }}
     whileInView={{ opacity: 1, y: 0 }}
@@ -78,7 +86,7 @@ const SectionTitle = ({ children, subtitle, light = false }: { children: React.R
   </motion.div>
 );
 
-const FAQItem = ({ question, answer }: { question: string, answer: string }) => {
+const FAQItem = ({ question, answer }: { question: string, answer: React.ReactNode }) => {
   const [isOpen, setIsOpen] = useState(false);
   return (
     <div className="border-b border-zinc-200 dark:border-zinc-800 py-4">
@@ -105,21 +113,94 @@ const FAQItem = ({ question, answer }: { question: string, answer: string }) => 
   );
 };
 
+const StatCounter = ({ value, suffix, label, icon: Icon, delay = 0 }: { value: number, suffix: string, label: string, icon: any, delay?: number }) => {
+  const ref = useRef(null);
+  const isInView = useInView(ref, { once: true, margin: "-50px" });
+  const [displayValue, setDisplayValue] = useState(0);
+
+  useEffect(() => {
+    if (isInView) {
+      const controls = animate(0, value, {
+        duration: 2,
+        ease: "easeOut",
+        delay: delay,
+        onUpdate: (latest) => setDisplayValue(Math.round(latest))
+      });
+      return () => controls.stop();
+    }
+  }, [isInView, value, delay]);
+
+  return (
+    <motion.div 
+      ref={ref} 
+      initial={{ opacity: 0, y: 40, scale: 0.9 }}
+      whileInView={{ opacity: 1, y: 0, scale: 1 }}
+      viewport={{ once: true }}
+      transition={{ 
+        type: "spring",
+        stiffness: 100,
+        damping: 15,
+        bounce: 0.5,
+        duration: 0.8,
+        delay: delay
+      }}
+      className="flex flex-col items-center p-8 rounded-[2.5rem] bg-gradient-to-br from-white/15 via-brand-500/5 to-brand-600/10 border border-white/20 backdrop-blur-md hover:from-white/20 hover:to-brand-500/20 transition-all duration-500 group font-montserrat"
+    >
+      <div className="w-16 h-16 md:w-20 md:h-20 rounded-3xl bg-brand-400/20 flex items-center justify-center mb-8 group-hover:scale-110 transition-transform duration-500">
+        <Icon className="w-8 h-8 md:w-10 md:h-10 text-brand-300" />
+      </div>
+      <div className="text-4xl md:text-6xl font-black mb-3 tracking-tighter text-white">
+        +{displayValue}{suffix}
+      </div>
+      <div className="text-[11px] md:text-xs text-brand-200 uppercase tracking-[0.25em] text-center font-bold">
+        {label}
+      </div>
+    </motion.div>
+  );
+};
+
 function LandingPage({ theme, toggleTheme }: { theme: 'light' | 'dark', toggleTheme: () => void }) {
   const navigate = useNavigate();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [showLogoTooltip, setShowLogoTooltip] = useState(false);
+  const [activeSection, setActiveSection] = useState<string>("");
   const carouselRef = useRef<HTMLDivElement>(null);
   const [carouselConstraints, setCarouselConstraints] = useState({ left: 0, right: 0 });
   const [activeTestimonialIndex, setActiveTestimonialIndex] = useState(0);
+  const x = useMotionValue(0);
+
+  const scrollToTestimonial = (index: number) => {
+    if (carouselRef.current) {
+      const cardWidth = carouselRef.current.querySelector('.flex-shrink-0')?.clientWidth || 400;
+      const gap = window.innerWidth >= 768 ? 32 : 24;
+      const step = cardWidth + gap;
+      const targetX = -index * step;
+      
+      // Ensure we don't scroll past constraints
+      const boundedX = Math.max(Math.min(targetX, 0), carouselConstraints.left);
+      
+      animate(x, boundedX, {
+        type: "spring",
+        stiffness: 300,
+        damping: 30,
+      });
+      setActiveTestimonialIndex(index);
+    }
+  };
 
   const heroRef = useRef<HTMLElement>(null);
+  const autoridadeRef = useRef<HTMLElement>(null);
   const { scrollYProgress } = useScroll({
     target: heroRef,
     offset: ["start start", "end start"]
   });
   const y = useTransform(scrollYProgress, [0, 1], ["0%", "30%"]);
   const opacity = useTransform(scrollYProgress, [0, 1], [1, 0.5]);
+
+  const { scrollYProgress: autoridadeScroll } = useScroll({
+    target: autoridadeRef,
+    offset: ["start end", "end start"]
+  });
+  const autoridadeY = useTransform(autoridadeScroll, [0, 1], ["-5%", "5%"]);
 
   const handleWhatsAppClick = () => {
     window.open(WHATSAPP_LINK, '_blank');
@@ -139,42 +220,63 @@ function LandingPage({ theme, toggleTheme }: { theme: 'light' | 'dark', toggleTh
     return () => window.removeEventListener('resize', updateConstraints);
   }, []);
 
+  useEffect(() => {
+    const sections = ["harmonia", "servicos", "metodo", "depoimentos", "autoridade"];
+    const observerOptions = {
+      root: null,
+      rootMargin: "-40% 0px -40% 0px",
+      threshold: 0
+    };
+
+    const observerCallback = (entries: IntersectionObserverEntry[]) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          setActiveSection(entry.target.id);
+        }
+      });
+    };
+
+    const observer = new IntersectionObserver(observerCallback, observerOptions);
+
+    sections.forEach((id) => {
+      const element = document.getElementById(id);
+      if (element) observer.observe(element);
+    });
+
+    return () => observer.disconnect();
+  }, []);
+
   return (
     <div className="min-h-screen bg-brand-50 dark:bg-zinc-950 font-sans text-brand-900 dark:text-zinc-100 selection:bg-brand-100 dark:selection:bg-brand-900 selection:text-brand-900 dark:selection:text-white transition-colors duration-700 ease-in-out">
       {/* 1. HEADER */}
-      <header className="fixed top-0 left-0 right-0 z-50 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-md border-b border-brand-100 dark:border-zinc-800 transition-colors duration-700 ease-in-out">
-        <div className="max-w-7xl mx-auto px-4 h-16 md:h-20 flex items-center justify-between">
-          <div 
-            className="flex items-center gap-2 relative group cursor-help"
-            onMouseEnter={() => setShowLogoTooltip(true)}
-            onMouseLeave={() => setShowLogoTooltip(false)}
-          >
+      <header className="fixed top-0 left-0 right-0 z-50 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-xl border-b border-brand-100/50 dark:border-zinc-800/50 transition-all duration-700 ease-in-out">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 md:h-20 flex items-center justify-between">
+          <div className="flex items-center gap-2 relative group">
             <Logo white={theme === 'dark'} />
             <span className="font-outfit font-bold text-lg md:text-xl tracking-tight uppercase dark:text-white">
               Maes<span className="text-brand-600">tt</span>ro
             </span>
-            
-            <AnimatePresence>
-              {showLogoTooltip && (
-                <motion.div
-                  initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: 5, scale: 0.95 }}
-                  className="absolute top-full left-0 mt-2 px-3 py-1.5 bg-brand-900 dark:bg-brand-700 text-white text-[10px] md:text-xs font-medium rounded-md shadow-xl whitespace-nowrap z-[60] pointer-events-none"
-                >
-                  Maesttro - Regência Estratégica
-                  <div className="absolute -top-1 left-4 w-2 h-2 bg-brand-900 dark:bg-brand-700 rotate-45" />
-                </motion.div>
-              )}
-            </AnimatePresence>
           </div>
           
           {/* Desktop Nav */}
           <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-zinc-600 dark:text-zinc-400">
-            <a href="#harmonia" className="hover:text-brand-900 dark:hover:text-white transition-colors">Harmonia</a>
-            <a href="#metodo" className="hover:text-brand-900 dark:hover:text-white transition-colors">O Método</a>
-            <a href="#depoimentos" className="hover:text-brand-900 dark:hover:text-white transition-colors">Depoimentos</a>
-            <a href="#autoridade" className="hover:text-brand-900 dark:hover:text-white transition-colors">O Maestro</a>
+            {[
+              { label: "Serviços", href: "#servicos", id: "servicos" },
+              { label: "O Método", href: "#metodo", id: "metodo" },
+              { label: <>A Maesttro</>, href: "#autoridade", id: "autoridade" },
+            ].map((item) => (
+              <a 
+                key={item.id}
+                href={item.href} 
+                className={`relative group transition-all duration-300 py-2 px-3 rounded-lg ${
+                  activeSection === item.id 
+                  ? "text-brand-900 dark:text-white font-bold bg-zinc-100 dark:bg-zinc-800" 
+                  : "hover:text-brand-900 dark:hover:text-white hover:bg-zinc-50 dark:hover:bg-zinc-900/50"
+                }`}
+              >
+                {item.label}
+              </a>
+            ))}
           </nav>
 
           <div className="flex items-center gap-2 sm:gap-4">
@@ -196,61 +298,66 @@ function LandingPage({ theme, toggleTheme }: { theme: 'light' | 'dark', toggleTh
             
             {/* Mobile Menu Toggle */}
             <button 
-              className="md:hidden p-2 text-brand-900 dark:text-white relative z-50"
-              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              className="md:hidden p-3 -mr-2 text-brand-900 dark:text-white relative z-[100] cursor-pointer touch-manipulation"
+              onClick={() => setIsMobileMenuOpen(prev => !prev)}
+              aria-label={isMobileMenuOpen ? "Fechar menu" : "Abrir menu"}
             >
-              <AnimatePresence mode="wait">
-                <motion.div
-                  key={isMobileMenuOpen ? 'close' : 'menu'}
-                  initial={{ opacity: 0, rotate: -90 }}
-                  animate={{ opacity: 1, rotate: 0 }}
-                  exit={{ opacity: 0, rotate: 90 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-                </motion.div>
-              </AnimatePresence>
+              {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
             </button>
           </div>
         </div>
+      </header>
 
-        {/* Mobile Nav Overlay */}
-        <AnimatePresence>
-          {isMobileMenuOpen && (
-            <motion.div
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              transition={{ duration: 0.3, ease: "circOut" }}
-              className="md:hidden fixed inset-0 top-16 bg-white/98 dark:bg-zinc-950/98 backdrop-blur-xl z-40 overflow-y-auto"
-            >
+      {/* Mobile Nav Overlay */}
+      <AnimatePresence>
+        {isMobileMenuOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            transition={{ duration: 0.3, ease: "circOut" }}
+            className="md:hidden fixed inset-0 top-16 bg-white/95 dark:bg-zinc-950/95 backdrop-blur-xl z-[45] overflow-y-auto border-t border-zinc-100 dark:border-zinc-800"
+          >
               <nav className="flex flex-col p-6 gap-2">
                 {[
-                  { label: "Harmonia", href: "#harmonia", icon: Music },
-                  { label: "O Método", href: "#metodo", icon: Target },
-                  { label: "Depoimentos", href: "#depoimentos", icon: Quote },
-                  { label: "O Maestro", href: "#autoridade", icon: Star },
+                  { label: "Serviços", href: "#servicos", icon: Rocket, id: "servicos" },
+                  { label: "O Método", href: "#metodo", icon: Target, id: "metodo" },
+                  { label: <>A Maesttro</>, href: "#autoridade", icon: Star, id: "autoridade" },
                 ].map((item, i) => (
                   <motion.a
-                    key={item.label}
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: i * 0.05 + 0.1 }}
+                    key={item.id}
+                    initial={{ opacity: 0, y: 20, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    transition={{ 
+                      duration: 0.5, 
+                      delay: i * 0.08 + 0.1,
+                      ease: [0.215, 0.61, 0.355, 1]
+                    }}
                     href={item.href}
                     onClick={() => setIsMobileMenuOpen(false)}
-                    className="flex items-center gap-4 py-5 px-4 rounded-2xl hover:bg-brand-50 dark:hover:bg-brand-900/20 text-lg font-bold text-zinc-800 dark:text-zinc-200 transition-colors active:scale-[0.98]"
+                    className={`flex items-center gap-4 py-5 px-4 rounded-2xl transition-all active:scale-[0.98] ${
+                      activeSection === item.id 
+                      ? "bg-brand-50 dark:bg-brand-900/40 text-brand-900 dark:text-white shadow-sm" 
+                      : "hover:bg-brand-50 dark:hover:bg-brand-900/20 text-zinc-800 dark:text-zinc-200"
+                    }`}
                   >
-                    <div className="w-12 h-12 rounded-xl bg-brand-50 dark:bg-brand-900/30 flex items-center justify-center text-brand-600 dark:text-brand-400">
+                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center transition-all ${
+                      activeSection === item.id 
+                      ? "bg-brand-600 text-white scale-110 shadow-lg shadow-brand-600/20" 
+                      : "bg-brand-50 dark:bg-brand-900/30 text-brand-600 dark:text-brand-400"
+                    }`}>
                       <item.icon className="w-6 h-6" />
                     </div>
-                    {item.label}
+                    <span className={activeSection === item.id ? "font-extrabold text-lg" : "font-bold text-lg"}>
+                      {item.label}
+                    </span>
                   </motion.a>
                 ))}
                 
                 <motion.div 
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 0.4 }}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.4, duration: 0.5 }}
                   className="mt-6 pt-6 border-t border-zinc-100 dark:border-zinc-800"
                 >
                   <div className="flex items-center justify-between p-5 bg-zinc-50 dark:bg-zinc-900 rounded-2xl border border-zinc-100 dark:border-zinc-800">
@@ -275,19 +382,28 @@ function LandingPage({ theme, toggleTheme }: { theme: 'light' | 'dark', toggleTh
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.5 }}
+                  transition={{ delay: 0.5, duration: 0.6 }}
                   className="mt-8"
                 >
-                  <Button primary className="w-full py-5 text-lg" onClick={handleWhatsAppClick}>
+                  <Button primary className="w-full py-5 text-lg shadow-xl shadow-brand-600/20" onClick={handleWhatsAppClick}>
                     <MessageCircle className="w-6 h-6" />
                     Falar com o Maestro
+                  </Button>
+                  
+                  <Button 
+                    className="w-full mt-4 py-5 text-lg border-zinc-200 dark:border-zinc-800 text-zinc-800 dark:text-zinc-200 bg-white dark:bg-zinc-900" 
+                    onClick={() => {
+                      setIsMobileMenuOpen(false);
+                      navigate('/area-cliente');
+                    }}
+                  >
+                    Área do Cliente
                   </Button>
                 </motion.div>
               </nav>
             </motion.div>
           )}
-        </AnimatePresence>
-      </header>
+      </AnimatePresence>
 
       {/* Infinite Scrolling Marquee - Non-fixed, below header */}
       <div className="mt-20 bg-brand-900 text-brand-50 py-1 overflow-hidden whitespace-nowrap border-t border-brand-700 relative z-40">
@@ -343,7 +459,7 @@ function LandingPage({ theme, toggleTheme }: { theme: 'light' | 'dark', toggleTh
                 transition={{ duration: 0.5 }}
                 className="inline-block px-4 py-1.5 mb-6 text-[10px] md:text-xs font-semibold tracking-widest text-brand-700 dark:text-brand-400 uppercase bg-brand-50 dark:bg-brand-900/30 rounded-full border border-brand-100 dark:border-brand-800"
               >
-                Regência Estratégica para E-commerce
+                Estratégia e Tecnologia em perfeita harmonia
               </motion.span>
               
               <motion.h1 
@@ -352,7 +468,7 @@ function LandingPage({ theme, toggleTheme }: { theme: 'light' | 'dark', toggleTh
                   visible: { opacity: 1, y: 0 }
                 }}
                 transition={{ duration: 0.7, ease: "easeOut" }}
-                className="text-4xl sm:text-5xl md:text-7xl font-extrabold text-brand-900 dark:text-white tracking-tight mb-6 md:mb-8 leading-[1.1]"
+                className="text-[2.6rem] sm:text-6xl lg:text-7xl font-extrabold text-brand-900 dark:text-white tracking-tight mb-6 md:mb-10 leading-[1.1] px-4 sm:px-0"
               >
                 Sua operação de e-commerce <br className="hidden sm:block" />
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-400 to-brand-700 dark:from-brand-300 dark:to-brand-500">
@@ -366,9 +482,9 @@ function LandingPage({ theme, toggleTheme }: { theme: 'light' | 'dark', toggleTh
                   visible: { opacity: 1, y: 0 }
                 }}
                 transition={{ duration: 0.7, ease: "easeOut" }}
-                className="text-lg md:text-xl text-zinc-600 dark:text-zinc-400 max-w-3xl mx-auto mb-8 md:mb-10 leading-relaxed px-2"
+                className="text-base sm:text-lg md:text-xl text-zinc-600 dark:text-zinc-400 max-w-3xl mx-auto mb-10 md:mb-12 leading-relaxed px-4 sm:px-0"
               >
-                Há mais de 10 anos identificando gargalos e orquestrando o crescimento de lojas virtuais através de dados e inteligência de negócios.
+                Unimos inteligência de negócios e tecnologia de elite para criar operações de e-commerce escaláveis, seguras e de alta performance.
               </motion.p>
               
               <motion.div 
@@ -398,10 +514,10 @@ function LandingPage({ theme, toggleTheme }: { theme: 'light' | 'dark', toggleTh
           </div>
         </section>
 
-        {/* 2. SEÇÃO 'AFINE SUA ORQUESTRA' */}
+        {/* 3. SEÇÃO 'AFINE SUA ORQUESTRA' */}
         <section id="harmonia" className="py-20 md:py-24 bg-brand-900 text-white">
           <div className="max-w-7xl mx-auto px-4">
-            <SectionTitle subtitle="Resultados Maesttro" light>Afine sua Orquestra</SectionTitle>
+            <SectionTitle subtitle={<>Resultados <b>Maesttro</b></>} light>Afine sua Orquestra</SectionTitle>
             <motion.div 
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -412,12 +528,12 @@ function LandingPage({ theme, toggleTheme }: { theme: 'light' | 'dark', toggleTh
               {[
                 {
                   title: "Conversão Elevada (CRO)",
-                  desc: "Transformamos tráfego em vendas reais através de uma jornada de compra fluida e persuasiva.",
+                  desc: "Transformamos visitantes em vendas reais através de uma jornada de compra fluida e persuasiva.",
                   icon: TrendingUp
                 },
                 {
-                  title: "ROAS Exponencial",
-                  desc: "Campanhas de Ads otimizadas para gerar o máximo de retorno sobre cada centavo investido.",
+                  title: "Eficiência Operacional",
+                  desc: "Otimização de processos e tecnologia para reduzir custos e maximizar a margem de lucro.",
                   icon: Zap
                 },
                 {
@@ -459,7 +575,7 @@ function LandingPage({ theme, toggleTheme }: { theme: 'light' | 'dark', toggleTh
                 <span className="text-brand-600 dark:text-brand-400 font-mono text-[10px] md:text-xs uppercase tracking-widest mb-4 block">Intervenção Estratégica</span>
                 <h2 className="text-3xl md:text-4xl font-bold mb-6 tracking-tight leading-tight dark:text-white">Visão 360º: Nós conhecemos cada engrenagem.</h2>
                 <p className="text-base md:text-lg text-zinc-600 dark:text-zinc-400 mb-6 leading-relaxed">
-                  O diagnóstico da Maesttro não é superficial. Da escolha da plataforma à otimização do checkout, nossa análise é baseada na vivência técnica de quem sabe como cada instrumento deve ser tocado.
+                  O diagnóstico da <b>Maesttro</b> não é superficial. Da escolha da plataforma à otimização do checkout, nossa análise é baseada na vivência técnica de quem sabe como cada instrumento deve ser tocado.
                 </p>
                 <p className="text-base md:text-lg text-zinc-600 dark:text-zinc-400 mb-8 leading-relaxed">
                   Analisamos profundamente todas as camadas do seu e-commerce: Plataforma, Conversão, Dados e Processos. Se você não tem quem execute, o Maestro aponta o caminho exato e valida cada etapa da execução para garantir a eficiência operacional.
@@ -495,6 +611,47 @@ function LandingPage({ theme, toggleTheme }: { theme: 'light' | 'dark', toggleTh
           </div>
         </section>
 
+        {/* NOVO: SERVIÇOS TÉCNICOS */}
+        <section id="servicos" className="py-20 md:py-24 bg-zinc-50 dark:bg-zinc-900/50 transition-colors duration-300">
+          <div className="max-w-7xl mx-auto px-4">
+            <SectionTitle subtitle="Nossas Entregas">Soluções de Tecnologia e Estratégia</SectionTitle>
+            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8 mt-12">
+              {[
+                {
+                  title: "Lojas Virtuais",
+                  desc: "Desenvolvimento de e-commerces e sites de alta performance focados em conversão.",
+                  icon: Globe
+                },
+                {
+                  title: "Sistemas Web",
+                  desc: "Soluções sob medida e sistemas complexos para automatizar e escalar sua operação.",
+                  icon: Code
+                },
+                {
+                  title: "Analytics Pro",
+                  desc: "Web Analytics e Inteligência de Dados para decisões baseadas em fatos, não em palpites.",
+                  icon: BarChart3
+                },
+                {
+                  title: "Evolução de Projetos",
+                  desc: "Suporte técnico, evolução contínua e aceleração focada em crescimento sustentável.",
+                  icon: Rocket
+                }
+              ].map((item, i) => (
+                <motion.div 
+                  key={i}
+                  whileHover={{ y: -5 }}
+                  className="p-6 md:p-8 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 hover:border-brand-500/50 transition-all"
+                >
+                  <item.icon className="w-8 h-8 md:w-10 md:h-10 text-brand-600 dark:text-brand-400 mb-4 md:mb-6" />
+                  <h3 className="text-lg md:text-xl font-bold mb-3 md:mb-4 text-brand-900 dark:text-white">{item.title}</h3>
+                  <p className="text-zinc-600 dark:text-zinc-400 leading-relaxed text-sm">{item.desc}</p>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        </section>
+
         {/* 4. O MÉTODO MAESTTRO (Os 3 Atos) */}
         <section id="metodo" className="py-20 md:py-24 bg-brand-50/50 dark:bg-zinc-950 transition-colors duration-700 ease-in-out">
           <div className="max-w-7xl mx-auto px-4">
@@ -504,23 +661,23 @@ function LandingPage({ theme, toggleTheme }: { theme: 'light' | 'dark', toggleTh
                 {
                   id: "I",
                   icon: Search,
-                  title: "Ato 1: O Scan",
-                  desc: "Diagnóstico 360º de UX, dados e performance. Assim como um maestro estuda a partitura, analisamos cada detalhe da sua operação para encontrar as notas fora do tom.",
-                  items: ["Auditoria de Funil", "Análise de CAC e LTV", "Mapeamento de UX"]
+                  title: "Ato 1: Imersão e Diagnóstico",
+                  desc: "Auditoria profunda de dados e identificação de gargalos técnicos. Assim como um maestro estuda a partitura, analisamos cada detalhe da sua operação para encontrar as notas fora do tom.",
+                  items: ["Auditoria de Dados", "Gargalos Técnicos", "Mapeamento de UX"]
                 },
                 {
                   id: "II",
                   icon: FileText,
-                  title: "Ato 2: A Partitura",
-                  desc: "Roadmap estratégico e priorização de ações. Criamos o guia definitivo do que deve ser executado, focando nas alavancas que trazem ROI imediato.",
-                  items: ["Plano de Ação Prioritário", "Definição de Metas (KPIs)", "Estratégia de Retenção"]
+                  title: "Ato 2: Tecnologia e Planejamento",
+                  desc: "Desenvolvimento de sistemas, lojas e roadmap estratégico. Criamos o guia definitivo do que deve ser executado, focando nas alavancas que trazem ROI imediato.",
+                  items: ["Desenvolvimento Web", "Roadmap Estratégico", "Sistemas sob Medida"]
                 },
                 {
                   id: "III",
                   icon: Play,
-                  title: "Ato 3: A Regência",
-                  desc: "Monitoramento da execução dos times técnicos. Não tocamos os instrumentos (código), mas garantimos que cada analista e dev execute sua parte com precisão.",
-                  items: ["Supervisão de Times", "Acompanhamento de Sprint", "Validação de Resultados"]
+                  title: "Ato 3: Regência e Aceleração",
+                  desc: "Suporte contínuo, evolução técnica e monitoramento de KPIs. Garantimos que cada parte da sua tecnologia e estratégia execute com precisão absoluta.",
+                  items: ["Suporte e Evolução", "Monitoramento de KPIs", "Aceleração de Escala"]
                 }
               ].map((ato, i) => (
                 <motion.div 
@@ -551,57 +708,112 @@ function LandingPage({ theme, toggleTheme }: { theme: 'light' | 'dark', toggleTh
           </div>
         </section>
 
+        {/* NOVA SEÇÃO: RESULTADOS */}
+        <section className="py-24 md:py-32 bg-brand-900 text-white overflow-hidden relative">
+          {/* Background decoration - Enhanced for Purple Theme */}
+          <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
+            <div className="absolute top-[-20%] left-[-10%] w-[60%] h-[60%] rounded-full bg-brand-500/20 blur-[150px] animate-pulse" />
+            <div className="absolute bottom-[-20%] right-[-10%] w-[60%] h-[60%] rounded-full bg-brand-400/10 blur-[150px]" />
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full opacity-[0.03] pointer-events-none bg-[radial-gradient(#fff_1px,transparent_1px)] [background-size:40px_40px]" />
+          </div>
+
+          <div className="max-w-7xl mx-auto px-4 relative z-10">
+            <div className="text-center mb-20 md:mb-24">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9 }}
+                whileInView={{ opacity: 1, scale: 1 }}
+                viewport={{ once: true }}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 border border-white/20 mb-6"
+              >
+                <div className="w-2 h-2 rounded-full bg-brand-400 animate-ping" />
+                <span className="text-brand-200 font-mono text-[10px] md:text-xs uppercase tracking-[0.2em] font-bold">
+                  Nossa Performance
+                </span>
+              </motion.div>
+              
+              <motion.h2 
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: 0.1, duration: 0.8 }}
+                className="text-4xl md:text-6xl font-black tracking-tight leading-[1.1]"
+              >
+                Especialistas em negócios <br className="hidden md:block" /> de <span className="text-brand-400">performance</span>
+              </motion.h2>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8">
+              <StatCounter value={200} suffix="k" label="pedidos realizados" icon={ShoppingBag} delay={0.1} />
+              <StatCounter value={500} suffix="k" label="leads captados" icon={Users} delay={0.2} />
+              <StatCounter value={50} suffix="MM" label="acessos gerados" icon={Globe} delay={0.3} />
+              <StatCounter value={80} suffix="" label="projetos entregues" icon={Rocket} delay={0.4} />
+            </div>
+          </div>
+        </section>
+
         {/* 5. POR QUE A MAESTTRO? */}
-        <section id="autoridade" className="py-20 md:py-24 bg-zinc-50 dark:bg-zinc-900/50 transition-colors duration-700 ease-in-out">
+        <section id="autoridade" ref={autoridadeRef} className="py-20 md:py-32 bg-zinc-50 dark:bg-zinc-900/50 transition-colors duration-700 ease-in-out overflow-hidden">
           <div className="max-w-7xl mx-auto px-4">
-            <motion.div 
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: "-100px" }}
-              transition={{ duration: 0.8 }}
-              className="flex flex-col md:flex-row items-center gap-10 md:gap-16"
-            >
-              <div className="w-full md:w-1/2">
+            <div className="flex flex-col md:flex-row items-center gap-12 md:gap-20">
+              <motion.div 
+                style={{ y: autoridadeY }}
+                className="w-full md:w-1/2"
+              >
                 <div className="relative">
                   <div className="absolute -inset-4 bg-brand-600/10 dark:bg-brand-600/5 rounded-3xl blur-2xl" />
                   <img 
                     src="/img/foto_pedro_gui/pedro_gui_foto.jpeg" 
-                    alt="O Maestro Estratégico" 
-                    className="relative rounded-3xl shadow-2xl grayscale hover:grayscale-0 transition-all duration-700 object-cover aspect-[4/5] dark:opacity-80"
+                    alt="Os Especialistas da Maesttro" 
+                    className="relative rounded-3xl shadow-2xl grayscale hover:grayscale-0 transition-all duration-700 object-cover aspect-[4/5] dark:opacity-80 w-full"
                     referrerPolicy="no-referrer"
                     loading="lazy"
                   />
                   <div className="absolute bottom-4 md:bottom-8 -right-4 md:-right-8 bg-white dark:bg-zinc-800 p-4 md:p-6 rounded-xl md:rounded-2xl shadow-xl border border-zinc-100 dark:border-zinc-700 hidden sm:block">
                     <Music className="w-6 h-6 md:w-8 md:h-8 text-brand-600 dark:text-brand-400 mb-2" />
-                    <p className="text-xs md:text-sm font-bold text-brand-900 dark:text-white">Regência Estratégica</p>
+                    <p className="text-xs md:text-sm font-bold text-brand-900 dark:text-white">Tecnologia e Estratégia</p>
                     <p className="text-[10px] md:text-xs text-zinc-500 dark:text-zinc-400">Performance em Harmonia</p>
                   </div>
                 </div>
-              </div>
-              <div className="w-full md:w-1/2 text-center md:text-left">
+              </motion.div>
+              <motion.div 
+                initial={{ opacity: 0, x: 30 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true, margin: "-100px" }}
+                transition={{ duration: 0.8 }}
+                className="w-full md:w-1/2 text-center md:text-left"
+              >
                 <span className="text-brand-600 dark:text-brand-400 font-mono text-[10px] md:text-xs uppercase tracking-widest mb-4 block">Diferenciais</span>
                 <h2 className="text-3xl md:text-4xl font-bold mb-6 tracking-tight leading-tight dark:text-white">Por que a MAESTTRO?</h2>
-                <p className="text-base md:text-lg text-zinc-600 dark:text-zinc-400 mb-6 leading-relaxed">
-                  O Maestro é aquele que domina a técnica de cada instrumento, mas escolhe reger para garantir que o resultado final seja uma sinfonia de lucros. Atuamos desde 2018 com uma visão crítica sobre plataformas e foco total em ROI.
+                <p className="text-base md:text-lg text-zinc-600 dark:text-zinc-400 mb-6 leading-relaxed font-semibold">
+                  Tecnologia e Estratégia em perfeita harmonia.
                 </p>
-                <p className="text-base md:text-lg text-zinc-600 dark:text-zinc-400 mb-8 leading-relaxed">
-                  Nossa entrega é baseada em eficiência operacional. Não aceitamos resultados medianos; buscamos a excelência técnica para que sua loja virtual performe no topo do mercado.
+                <p className="text-base md:text-lg text-zinc-600 dark:text-zinc-400 mb-6 leading-relaxed">
+                  Somos uma consultoria de marketing, com mais de 12 anos de experiência em criar, desenvolver e acelerar negócios.
+                </p>
+                <p className="text-base md:text-lg text-zinc-600 dark:text-zinc-400 mb-6 leading-relaxed">
+                  Cada projeto nasce com método, propósito e direção clara: fazer sua empresa crescer.
+                </p>
+                <p className="text-base md:text-lg text-zinc-600 dark:text-zinc-400 mb-6 leading-relaxed">
+                  A <b>Maesttro</b> une a inteligência de negócios com a construção técnica de elite. Não apenas dizemos o que fazer; nós construímos as ferramentas e sistemas necessários para a escala.
+                </p>
+                <p className="text-base md:text-lg text-zinc-600 dark:text-zinc-400 mb-8 leading-relaxed italic">
+                  "Enquanto auditamos sua estratégia, nossa tecnologia constrói e otimiza sua infraestrutura. Tecnologia e dados no protagonismo da sua escala."
                 </p>
                 <div className="grid grid-cols-2 gap-4 md:gap-6 mb-8">
                   <div>
                     <div className="text-2xl md:text-3xl font-bold text-brand-900 dark:text-white">Desde 2018</div>
-                    <div className="text-[10px] md:text-sm text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Experiência Real</div>
+                    <div className="text-[10px] md:text-sm text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">E-commerce Real</div>
                   </div>
                   <div>
-                    <div className="text-2xl md:text-3xl font-bold text-brand-900 dark:text-white">Visão 360º</div>
-                    <div className="text-[10px] md:text-sm text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Foco em ROI</div>
+                    <div className="text-2xl md:text-3xl font-bold text-brand-900 dark:text-white">Tecnologia</div>
+                    <div className="text-[10px] md:text-sm text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Sistemas e Dados</div>
                   </div>
                 </div>
                 <Button primary className="mx-auto md:mx-0" onClick={handleWhatsAppClick}>
-                  Falar com o Maestro
+                  Falar com os Especialistas
                 </Button>
-              </div>
-            </motion.div>
+              </motion.div>
+            </div>
           </div>
         </section>
 
@@ -610,10 +822,31 @@ function LandingPage({ theme, toggleTheme }: { theme: 'light' | 'dark', toggleTh
           <div className="max-w-7xl mx-auto px-4">
             <SectionTitle subtitle="Vozes da Experiência">Sinfonia de Resultados</SectionTitle>
             
-            <div className="relative">
+            <div className="relative group/carousel">
+              {/* Navigation Arrows */}
+              <div className="hidden md:block">
+                <button 
+                  onClick={() => scrollToTestimonial(Math.max(activeTestimonialIndex - 1, 0))}
+                  className={`absolute left-0 top-1/2 -translate-y-1/2 -translate-x-6 z-10 p-3 rounded-full bg-white dark:bg-zinc-800 border border-zinc-100 dark:border-zinc-700 shadow-xl text-brand-900 dark:text-white opacity-0 group-hover/carousel:opacity-100 group-hover/carousel:translate-x-0 transition-all duration-300 hover:bg-brand-50 dark:hover:bg-zinc-700 disabled:opacity-0 cursor-pointer`}
+                  disabled={activeTestimonialIndex === 0}
+                  aria-label="Depoimento anterior"
+                >
+                  <ChevronLeft className="w-6 h-6" />
+                </button>
+                <button 
+                  onClick={() => scrollToTestimonial(Math.min(activeTestimonialIndex + 1, 2))}
+                  className={`absolute right-0 top-1/2 -translate-y-1/2 translate-x-6 z-10 p-3 rounded-full bg-white dark:bg-zinc-800 border border-zinc-100 dark:border-zinc-700 shadow-xl text-brand-900 dark:text-white opacity-0 group-hover/carousel:opacity-100 group-hover/carousel:translate-x-0 transition-all duration-300 hover:bg-brand-50 dark:hover:bg-zinc-700 disabled:opacity-0 cursor-pointer`}
+                  disabled={activeTestimonialIndex === 2}
+                  aria-label="Próximo depoimento"
+                >
+                  <ChevronRight className="w-6 h-6" />
+                </button>
+              </div>
+
               <div className="overflow-visible" ref={carouselRef}>
                 <motion.div 
                   className="flex gap-6 md:gap-8 cursor-grab active:cursor-grabbing"
+                  style={{ x }}
                   drag="x"
                   dragConstraints={carouselConstraints}
                   dragElastic={0.1}
@@ -720,19 +953,19 @@ function LandingPage({ theme, toggleTheme }: { theme: 'light' | 'dark', toggleTh
             >
               <FAQItem 
                 question="Você entende da minha plataforma?" 
-                answer="Sabemos extrair o melhor de cada plataforma, identificando limitações e oportunidades técnicas."
+                answer={<>Sabemos extrair o melhor de cada plataforma, identificando limitações e oportunidades técnicas.</>}
               />
               <FAQItem 
                 question="Você executa o serviço?" 
-                answer="Minha entrega principal é a inteligência e a supervisão técnica. Eu garanto que quem executa (seu time ou agência) não cometa erros que custam caro, validando cada etapa do roadmap estratégico."
+                answer={<>Minha entrega principal é a inteligência e a supervisão técnica. Eu garanto que quem executa (seu time ou agência) não cometa erros que custam caro, validando cada etapa do roadmap estratégico.</>}
               />
               <FAQItem 
                 question="Como funciona o modelo de orçamento?" 
-                answer="Trabalhamos com um modelo de orçamento fechado por projeto/diagnóstico ou fee mensal para acompanhamento contínuo (regência). Isso garante previsibilidade e foco total na entrega de valor."
+                answer={<>Trabalhamos com um modelo de orçamento fechado por projeto/diagnóstico ou fee mensal para acompanhamento contínuo (regência). Isso garante previsibilidade e foco total na entrega de valor.</>}
               />
               <FAQItem 
                 question="Qual o principal KPI que vocês acompanham?" 
-                answer="Embora olhemos princialmente para ROI e ROAS, nosso KPI mestre é o Lucro Líquido da operação. A harmonia só existe quando a música gera resultado financeiro real."
+                answer={<>Embora olhemos princialmente para ROI e ROAS, nosso KPI mestre é o Lucro Líquido da operação. A harmonia só existe quando a música gera resultado financeiro real.</>}
               />
             </motion.div>
           </div>
@@ -765,7 +998,7 @@ function LandingPage({ theme, toggleTheme }: { theme: 'light' | 'dark', toggleTh
                 </span>
               </div>
               <div className="text-zinc-500 dark:text-zinc-600 text-xs md:text-sm text-center md:text-left">
-                © 2024 Maesttro - Regência Estratégica de E-commerce. <br className="md:hidden" /> Todos os direitos reservados.
+                © 2025 <b>Maesttro</b> - Tecnologia e Estratégia de E-commerce. <br className="md:hidden" /> Todos os direitos reservados.
               </div>
               <div className="flex flex-wrap justify-center gap-6 text-zinc-400 dark:text-zinc-500 text-sm">
                 <button onClick={() => navigate('/area-cliente')} className="hidden md:block hover:text-white dark:hover:text-brand-400 transition-colors">Área do Cliente</button>
