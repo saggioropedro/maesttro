@@ -20,6 +20,8 @@ const Logo = ({ className = "w-12 h-12" }: { className?: string }) => {
         alt="Maesttro Logo" 
         className="w-full h-full object-contain"
         referrerPolicy="no-referrer"
+        fetchPriority="high"
+        decoding="async"
       />
     </div>
   );
@@ -488,6 +490,8 @@ const DashboardOverview = ({ onSelectProject }: { onSelectProject: (project: any
                           alt={member}
                           className="w-full h-full object-cover grayscale hover:grayscale-0 transition-all duration-300"
                           referrerPolicy="no-referrer"
+                          loading="lazy"
+                          decoding="async"
                         />
                       </div>
                     ))}

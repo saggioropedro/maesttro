@@ -39,7 +39,7 @@ import {
   ShoppingBag,
   Users
 } from 'lucide-react';
-import { motion, AnimatePresence, useScroll, useTransform, useInView, animate, useMotionValue } from 'motion/react';
+import { motion, AnimatePresence, useScroll, useTransform, useInView, animate, useMotionValue, useMotionValueEvent } from 'motion/react';
 
 const WHATSAPP_NUMBER = "5511999389334";
 const WHATSAPP_LINK = `https://wa.me/${WHATSAPP_NUMBER}?text=Olá! Gostaria de falar com o Maesttro sobre a performance do meu e-commerce.`;
@@ -49,11 +49,12 @@ const Logo = ({ className = "w-8 h-8 md:w-10 md:h-10", white = false }: { classN
   return (
     <div className={`${className} flex items-center justify-center`}>
       <img 
-        src="/img/logo/logo_maesttro_roxo.png" 
+        src={white ? "/img/logo/logo_maesttro_branco_semfundo.png" : "/img/logo/logo_maesttro_roxo_semfundo.png"} 
         alt="Maesttro Logo" 
-        className={`w-full h-full object-contain ${white ? 'grayscale invert brightness-[200%] contrast-[200%] mix-blend-screen' : ''}`}
+        className="w-full h-full object-contain"
         referrerPolicy="no-referrer"
         fetchPriority="high"
+        decoding="async"
       />
     </div>
   );
@@ -144,12 +145,12 @@ const StatCounter = ({ value, suffix, label, icon: Icon, delay = 0 }: { value: n
         duration: 0.8,
         delay: delay
       }}
-      className="flex flex-col items-center p-8 rounded-[2.5rem] bg-gradient-to-br from-white/15 via-brand-500/5 to-brand-600/10 border border-white/20 backdrop-blur-md hover:from-white/20 hover:to-brand-500/20 transition-all duration-500 group font-montserrat"
+      className="flex flex-col items-center p-8 rounded-[2.5rem] bg-gradient-to-br from-white/15 via-brand-500/5 to-brand-600/10 border border-white/20 backdrop-blur-md hover:from-white/20 hover:to-brand-500/20 transition-all duration-500 group font-montserrat will-change-transform"
     >
       <div className="w-16 h-16 md:w-20 md:h-20 rounded-3xl bg-brand-400/20 flex items-center justify-center mb-8 group-hover:scale-110 transition-transform duration-500">
         <Icon className="w-8 h-8 md:w-10 md:h-10 text-brand-300" />
       </div>
-      <div className="text-4xl md:text-6xl font-black mb-3 tracking-tighter text-white">
+      <div className="text-4xl md:text-6xl font-black mb-3 tracking-tighter text-white tabular-nums min-h-[1.2em] flex items-center justify-center">
         +{displayValue}{suffix}
       </div>
       <div className="text-[11px] md:text-xs text-brand-200 uppercase tracking-[0.25em] text-center font-bold">
@@ -193,6 +194,26 @@ function LandingPage({ theme, toggleTheme }: { theme: 'light' | 'dark', toggleTh
     target: heroRef,
     offset: ["start start", "end start"]
   });
+  const { scrollY } = useScroll();
+  const [showHeader, setShowHeader] = useState(true);
+  const lastScrollY = useRef(0);
+
+  useMotionValueEvent(scrollY, "change", (latest) => {
+    if (isMobileMenuOpen) return;
+
+    const direction = latest > lastScrollY.current ? "down" : "up";
+    
+    if (latest < 50) {
+      setShowHeader(true);
+    } else if (direction === "down" && latest > 150 && showHeader) {
+      setShowHeader(false);
+    } else if (direction === "up" && !showHeader) {
+      setShowHeader(true);
+    }
+    
+    lastScrollY.current = latest;
+  });
+
   const y = useTransform(scrollYProgress, [0, 1], ["0%", "30%"]);
   const opacity = useTransform(scrollYProgress, [0, 1], [1, 0.5]);
 
@@ -246,10 +267,26 @@ function LandingPage({ theme, toggleTheme }: { theme: 'light' | 'dark', toggleTh
     return () => observer.disconnect();
   }, []);
 
+  useEffect(() => {
+    if (isMobileMenuOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [isMobileMenuOpen]);
+
   return (
     <div className="min-h-screen bg-brand-50 dark:bg-zinc-950 font-sans text-brand-900 dark:text-zinc-100 selection:bg-brand-100 dark:selection:bg-brand-900 selection:text-brand-900 dark:selection:text-white transition-colors duration-700 ease-in-out">
       {/* 1. HEADER */}
-      <header className="fixed top-0 left-0 right-0 z-50 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-xl border-b border-brand-100/50 dark:border-zinc-800/50 transition-all duration-700 ease-in-out">
+      <motion.header 
+        initial={{ y: 0 }}
+        animate={{ y: showHeader ? 0 : -100 }}
+        transition={{ duration: 0.3, ease: "easeInOut" }}
+        className="fixed top-0 left-0 right-0 z-50 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-xl border-b border-brand-100/50 dark:border-zinc-800/50"
+      >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 md:h-20 flex items-center justify-between">
           <div className="flex items-center gap-2 relative group">
             <Logo white={theme === 'dark'} />
@@ -306,107 +343,110 @@ function LandingPage({ theme, toggleTheme }: { theme: 'light' | 'dark', toggleTh
             </button>
           </div>
         </div>
-      </header>
+      </motion.header>
 
       {/* Mobile Nav Overlay */}
-      <AnimatePresence>
+      <AnimatePresence mode="wait">
         {isMobileMenuOpen && (
           <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            transition={{ duration: 0.3, ease: "circOut" }}
-            className="md:hidden fixed inset-0 top-16 bg-white/95 dark:bg-zinc-950/95 backdrop-blur-xl z-[45] overflow-y-auto border-t border-zinc-100 dark:border-zinc-800"
+            initial={{ opacity: 0, x: "100%" }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: "100%" }}
+            transition={{ type: "spring", damping: 25, stiffness: 200 }}
+            className="md:hidden fixed inset-0 top-0 bg-white dark:bg-zinc-950 z-[60] overflow-y-auto flex flex-col"
           >
-              <nav className="flex flex-col p-6 gap-2">
-                {[
-                  { label: "Serviços", href: "#servicos", icon: Rocket, id: "servicos" },
-                  { label: "O Método", href: "#metodo", icon: Target, id: "metodo" },
-                  { label: <>A Maesttro</>, href: "#autoridade", icon: Star, id: "autoridade" },
-                ].map((item, i) => (
-                  <motion.a
-                    key={item.id}
-                    initial={{ opacity: 0, y: 20, scale: 0.95 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    transition={{ 
-                      duration: 0.5, 
-                      delay: i * 0.08 + 0.1,
-                      ease: [0.215, 0.61, 0.355, 1]
-                    }}
-                    href={item.href}
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className={`flex items-center gap-4 py-5 px-4 rounded-2xl transition-all active:scale-[0.98] ${
-                      activeSection === item.id 
-                      ? "bg-brand-50 dark:bg-brand-900/40 text-brand-900 dark:text-white shadow-sm" 
-                      : "hover:bg-brand-50 dark:hover:bg-brand-900/20 text-zinc-800 dark:text-zinc-200"
-                    }`}
-                  >
-                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center transition-all ${
-                      activeSection === item.id 
-                      ? "bg-brand-600 text-white scale-110 shadow-lg shadow-brand-600/20" 
-                      : "bg-brand-50 dark:bg-brand-900/30 text-brand-600 dark:text-brand-400"
-                    }`}>
-                      <item.icon className="w-6 h-6" />
-                    </div>
-                    <span className={activeSection === item.id ? "font-extrabold text-lg" : "font-bold text-lg"}>
-                      {item.label}
-                    </span>
-                  </motion.a>
-                ))}
-                
-                <motion.div 
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.4, duration: 0.5 }}
-                  className="mt-6 pt-6 border-t border-zinc-100 dark:border-zinc-800"
-                >
-                  <div className="flex items-center justify-between p-5 bg-zinc-50 dark:bg-zinc-900 rounded-2xl border border-zinc-100 dark:border-zinc-800">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 bg-white dark:bg-zinc-800 rounded-lg shadow-sm">
-                        {theme === 'light' ? <Sun className="w-5 h-5 text-amber-500" /> : <Moon className="w-5 h-5 text-brand-400" />}
-                      </div>
-                      <span className="font-bold text-zinc-900 dark:text-white">Modo {theme === 'light' ? 'Claro' : 'Escuro'}</span>
-                    </div>
-                    <button
-                      onClick={toggleTheme}
-                      className="relative w-12 h-6 bg-zinc-200 dark:bg-zinc-700 rounded-full transition-colors"
-                    >
-                      <motion.div 
-                        animate={{ x: theme === 'light' ? 4 : 28 }}
-                        className="absolute top-1 left-0 w-4 h-4 bg-white rounded-full shadow-sm"
-                      />
-                    </button>
-                  </div>
-                </motion.div>
+            <div className="flex items-center justify-between px-4 h-16 border-b border-zinc-100 dark:border-zinc-800">
+              <div className="flex items-center gap-2">
+                <Logo white={theme === 'dark'} />
+                <span className="font-outfit font-bold text-lg tracking-tight uppercase dark:text-white">
+                  Maes<span className="text-brand-600">tt</span>ro
+                </span>
+              </div>
+              <button 
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="p-2 text-zinc-500 dark:text-zinc-400 cursor-pointer"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
 
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.5, duration: 0.6 }}
-                  className="mt-8"
+            <nav className="flex-1 flex flex-col items-center justify-center p-8 gap-8">
+              {[
+                { label: "Serviços", href: "#servicos", icon: Rocket, id: "servicos" },
+                { label: "O Método", href: "#metodo", icon: Target, id: "metodo" },
+                { label: "A Maesttro", href: "#autoridade", icon: Star, id: "autoridade" },
+              ].map((item, i) => (
+                <motion.a
+                  key={item.id}
+                  initial={{ opacity: 0, y: 20, scale: 0.8 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                  transition={{ 
+                    type: "spring",
+                    stiffness: 260,
+                    damping: 20,
+                    delay: i * 0.1
+                  }}
+                  href={item.href}
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="flex flex-col items-center gap-3 group"
                 >
-                  <Button primary className="w-full py-5 text-lg shadow-xl shadow-brand-600/20" onClick={handleWhatsAppClick}>
-                    <MessageCircle className="w-6 h-6" />
-                    Falar com o Maestro
-                  </Button>
-                  
-                  <Button 
-                    className="w-full mt-4 py-5 text-lg border-zinc-200 dark:border-zinc-800 text-zinc-800 dark:text-zinc-200 bg-white dark:bg-zinc-900" 
-                    onClick={() => {
-                      setIsMobileMenuOpen(false);
-                      navigate('/area-cliente');
-                    }}
+                  <div className={`w-16 h-16 rounded-2xl flex items-center justify-center transition-all ${
+                    activeSection === item.id 
+                    ? "bg-brand-600 text-white shadow-xl shadow-brand-600/30 scale-110" 
+                    : "bg-brand-50 dark:bg-brand-900/30 text-brand-600 dark:text-brand-400"
+                  }`}>
+                    <item.icon className="w-8 h-8" />
+                  </div>
+                  <span className={`text-2xl tracking-tight ${activeSection === item.id ? "font-black text-brand-600 dark:text-brand-400" : "font-bold text-zinc-800 dark:text-zinc-200"}`}>
+                    {item.label}
+                  </span>
+                </motion.a>
+              ))}
+              
+              <motion.div 
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.9 }}
+                transition={{ delay: 0.4 }}
+                className="w-full max-w-xs mt-8 space-y-4"
+              >
+                <Button primary className="w-full py-5 text-lg shadow-xl shadow-brand-600/20" onClick={handleWhatsAppClick}>
+                  <MessageCircle className="w-6 h-6" />
+                  Falar com o Maestro
+                </Button>
+                
+                <Button 
+                  className="w-full py-5 text-lg border-zinc-200 dark:border-zinc-800 text-zinc-800 dark:text-zinc-200 bg-zinc-50 dark:bg-zinc-900" 
+                  onClick={() => {
+                    setIsMobileMenuOpen(false);
+                    navigate('/area-cliente');
+                  }}
+                >
+                  Área do Cliente
+                </Button>
+
+                <div className="flex items-center justify-center gap-4 pt-4">
+                  <span className="text-sm font-medium text-zinc-500">Modo {theme === 'light' ? 'Claro' : 'Escuro'}</span>
+                  <button
+                    onClick={toggleTheme}
+                    className="relative w-12 h-6 bg-zinc-200 dark:bg-zinc-700 rounded-full transition-colors cursor-pointer"
                   >
-                    Área do Cliente
-                  </Button>
-                </motion.div>
-              </nav>
-            </motion.div>
-          )}
+                    <motion.div 
+                      animate={{ x: theme === 'light' ? 4 : 28 }}
+                      className="absolute top-1 left-0 w-4 h-4 bg-white rounded-full shadow-sm"
+                    />
+                  </button>
+                </div>
+              </motion.div>
+            </nav>
+          </motion.div>
+        )}
       </AnimatePresence>
 
       {/* Infinite Scrolling Marquee - Non-fixed, below header */}
-      <div className="mt-20 bg-brand-900 text-brand-50 py-1 overflow-hidden whitespace-nowrap border-t border-brand-700 relative z-40">
+      <div className={`transition-all duration-500 ${isMobileMenuOpen ? 'blur-md pointer-events-none' : ''}`}>
+        <div className="mt-20 bg-brand-900 text-brand-50 py-1 overflow-hidden whitespace-nowrap border-t border-brand-700 relative z-40">
         <div className="animate-marquee">
           {[...Array(10)].map((_, i) => (
             <span key={i} className="inline-flex items-center text-[10px] md:text-xs font-medium uppercase tracking-[0.2em] font-space">
@@ -427,11 +467,12 @@ function LandingPage({ theme, toggleTheme }: { theme: 'light' | 'dark', toggleTh
           >
             <div className="absolute inset-0 bg-gradient-to-b from-brand-50/70 dark:from-zinc-950/70 via-white/90 dark:via-zinc-950/90 to-white dark:to-zinc-950 z-10" />
             <img 
-              src="https://picsum.photos/seed/orchestra/1920/1080?blur=10" 
+              src="https://picsum.photos/seed/orchestra/1280/720?blur=10" 
               alt="Background" 
               className="w-full h-full object-cover opacity-15 md:opacity-20 grayscale dark:opacity-10"
               referrerPolicy="no-referrer"
               fetchPriority="high"
+              decoding="async"
             />
           </motion.div>
           
@@ -762,11 +803,12 @@ function LandingPage({ theme, toggleTheme }: { theme: 'light' | 'dark', toggleTh
                 <div className="relative">
                   <div className="absolute -inset-4 bg-brand-600/10 dark:bg-brand-600/5 rounded-3xl blur-2xl" />
                   <img 
-                    src="/img/foto_pedro_gui/pedro_gui_foto.jpeg" 
-                    alt="Os Especialistas da Maesttro" 
-                    className="relative rounded-3xl shadow-2xl grayscale hover:grayscale-0 transition-all duration-700 object-cover aspect-[4/5] dark:opacity-80 w-full"
+                    src="/img/foto_funil_commerce/funil_ecommerce_maesttro.png" 
+                    alt="Funil de E-commerce Maesttro - Estratégia e Performance" 
+                    className="relative rounded-3xl shadow-2xl transition-all duration-700 object-cover aspect-[4/5] dark:opacity-90 w-full grayscale md:hover:grayscale-0"
                     referrerPolicy="no-referrer"
                     loading="lazy"
+                    decoding="async"
                   />
                   <div className="absolute bottom-4 md:bottom-8 -right-4 md:-right-8 bg-white dark:bg-zinc-800 p-4 md:p-6 rounded-xl md:rounded-2xl shadow-xl border border-zinc-100 dark:border-zinc-700 hidden sm:block">
                     <Music className="w-6 h-6 md:w-8 md:h-8 text-brand-600 dark:text-brand-400 mb-2" />
@@ -791,7 +833,7 @@ function LandingPage({ theme, toggleTheme }: { theme: 'light' | 'dark', toggleTh
                   Somos uma consultoria de marketing, com mais de 12 anos de experiência em criar, desenvolver e acelerar negócios.
                 </p>
                 <p className="text-base md:text-lg text-zinc-600 dark:text-zinc-400 mb-6 leading-relaxed">
-                  Cada projeto nasce com método, propósito e direção clara: fazer sua empresa crescer.
+                  Cada projeto nasce com método, propósito e direção clara: <b>fazer sua empresa crescer.</b>
                 </p>
                 <p className="text-base md:text-lg text-zinc-600 dark:text-zinc-400 mb-6 leading-relaxed">
                   A <b>Maesttro</b> une a inteligência de negócios com a construção técnica de elite. Não apenas dizemos o que fazer; nós construímos as ferramentas e sistemas necessários para a escala.
@@ -849,7 +891,8 @@ function LandingPage({ theme, toggleTheme }: { theme: 'light' | 'dark', toggleTh
                   style={{ x }}
                   drag="x"
                   dragConstraints={carouselConstraints}
-                  dragElastic={0.1}
+                  dragElastic={0.2}
+                  dragMomentum={false}
                   whileTap={{ cursor: "grabbing" }}
                   dragTransition={{
                     power: 0.2,
@@ -912,6 +955,7 @@ function LandingPage({ theme, toggleTheme }: { theme: 'light' | 'dark', toggleTh
                           className="w-10 h-10 md:w-12 md:h-12 rounded-full object-cover border-2 border-white dark:border-zinc-600 shadow-sm"
                           referrerPolicy="no-referrer"
                           loading="lazy"
+                          decoding="async"
                         />
                         <div>
                           <h4 className="font-bold text-sm md:text-base text-brand-900 dark:text-white">{testimonial.author}</h4>
@@ -1009,6 +1053,7 @@ function LandingPage({ theme, toggleTheme }: { theme: 'light' | 'dark', toggleTh
           </motion.div>
         </section>
       </main>
+      </div>
     </div>
   );
 }
