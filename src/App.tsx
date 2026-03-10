@@ -16,7 +16,6 @@ import {
   Eye, 
   CheckCircle2, 
   ChevronDown, 
-  ChevronUp,
   ChevronLeft,
   ChevronRight,
   BarChart3,
@@ -96,7 +95,12 @@ const FAQItem = ({ question, answer }: { question: string, answer: React.ReactNo
         onClick={() => setIsOpen(!isOpen)}
       >
         <span className="text-lg font-medium text-zinc-800 dark:text-zinc-200 group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-colors">{question}</span>
-        {isOpen ? <ChevronUp className="text-zinc-400 dark:text-zinc-500" /> : <ChevronDown className="text-zinc-400 dark:text-zinc-500" />}
+        <motion.div
+          animate={{ rotate: isOpen ? 180 : 0 }}
+          transition={{ duration: 0.2 }}
+        >
+          <ChevronDown className="text-zinc-400 dark:text-zinc-500" />
+        </motion.div>
       </button>
       <AnimatePresence>
         {isOpen && (
@@ -171,15 +175,18 @@ function LandingPage({ theme, toggleTheme }: { theme: 'light' | 'dark', toggleTh
 
   const scrollToTestimonial = (index: number) => {
     if (carouselRef.current) {
-      const cardWidth = carouselRef.current.querySelector('.flex-shrink-0')?.clientWidth || 400;
+      const card = carouselRef.current.querySelector('.flex-shrink-0');
+      if (!card) return;
+      
+      const cardWidth = card.clientWidth;
       const gap = window.innerWidth >= 768 ? 32 : 24;
       const step = cardWidth + gap;
-      const targetX = -index * step;
+      const containerWidth = carouselRef.current.offsetWidth;
+      const offset = (containerWidth - cardWidth) / 2;
       
-      // Ensure we don't scroll past constraints
-      const boundedX = Math.max(Math.min(targetX, 0), carouselConstraints.left);
+      const targetX = offset - (index * step);
       
-      animate(x, boundedX, {
+      animate(x, targetX, {
         type: "spring",
         stiffness: 300,
         damping: 30,
@@ -230,15 +237,37 @@ function LandingPage({ theme, toggleTheme }: { theme: 'light' | 'dark', toggleTh
   useEffect(() => {
     const updateConstraints = () => {
       if (carouselRef.current) {
-        const scrollWidth = carouselRef.current.scrollWidth;
-        const offsetWidth = carouselRef.current.offsetWidth;
-        setCarouselConstraints({ left: -(scrollWidth - offsetWidth), right: 0 });
+        const card = carouselRef.current.querySelector('.flex-shrink-0');
+        if (card) {
+          const cardWidth = card.clientWidth;
+          const gap = window.innerWidth >= 768 ? 32 : 24;
+          const step = cardWidth + gap;
+          const containerWidth = carouselRef.current.offsetWidth;
+          const offset = (containerWidth - cardWidth) / 2;
+          
+          // We have 3 testimonials, so indices 0, 1, 2
+          const leftBound = offset - (2 * step);
+          const rightBound = offset;
+          
+          setCarouselConstraints({ left: leftBound, right: rightBound });
+          
+          // Set initial position centered on first card
+          if (x.get() === 0) {
+            x.set(offset);
+          }
+        }
       }
     };
 
     updateConstraints();
+    // Add a small delay to ensure layout is complete
+    const timer = setTimeout(updateConstraints, 500);
+    
     window.addEventListener('resize', updateConstraints);
-    return () => window.removeEventListener('resize', updateConstraints);
+    return () => {
+      window.removeEventListener('resize', updateConstraints);
+      clearTimeout(timer);
+    };
   }, []);
 
   useEffect(() => {
@@ -784,10 +813,10 @@ function LandingPage({ theme, toggleTheme }: { theme: 'light' | 'dark', toggleTh
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8">
-              <StatCounter value={200} suffix="k" label="pedidos realizados" icon={ShoppingBag} delay={0.1} />
-              <StatCounter value={500} suffix="k" label="leads captados" icon={Users} delay={0.2} />
-              <StatCounter value={50} suffix="MM" label="acessos gerados" icon={Globe} delay={0.3} />
-              <StatCounter value={80} suffix="" label="projetos entregues" icon={Rocket} delay={0.4} />
+              <StatCounter value={100} suffix="k" label="pedidos realizados" icon={ShoppingBag} delay={0.1} />
+              <StatCounter value={300} suffix="k" label="leads captados" icon={Users} delay={0.2} />
+              <StatCounter value={10} suffix="MM" label="acessos gerados" icon={Globe} delay={0.3} />
+              <StatCounter value={40} suffix="" label="projetos entregues" icon={Rocket} delay={0.4} />
             </div>
           </div>
         </section>
@@ -885,37 +914,64 @@ function LandingPage({ theme, toggleTheme }: { theme: 'light' | 'dark', toggleTh
                 </button>
               </div>
 
-              <div className="overflow-visible" ref={carouselRef}>
+              <div className="overflow-hidden py-4 -my-4" ref={carouselRef}>
                 <motion.div 
-                  className="flex gap-6 md:gap-8 cursor-grab active:cursor-grabbing"
+                  className="flex gap-6 md:gap-8 cursor-grab active:cursor-grabbing touch-pan-y will-change-transform"
                   style={{ x }}
                   drag="x"
                   dragConstraints={carouselConstraints}
+                  dragDirectionLock
                   dragElastic={0.2}
-                  dragMomentum={false}
+                  dragMomentum={true}
                   whileTap={{ cursor: "grabbing" }}
                   dragTransition={{
+                    bounceStiffness: 600,
+                    bounceDamping: 25,
                     power: 0.2,
                     timeConstant: 200,
                     modifyTarget: (target) => {
                       if (carouselRef.current) {
-                        const cardWidth = carouselRef.current.querySelector('.flex-shrink-0')?.clientWidth || 400;
+                        const card = carouselRef.current.querySelector('.flex-shrink-0');
+                        if (!card) return target;
+                        const cardWidth = card.clientWidth;
                         const gap = window.innerWidth >= 768 ? 32 : 24;
                         const step = cardWidth + gap;
-                        return Math.round(target / step) * step;
+                        const containerWidth = carouselRef.current.offsetWidth;
+                        const offset = (containerWidth - cardWidth) / 2;
+                        
+                        const index = Math.round((offset - target) / step);
+                        return offset - (index * step);
                       }
                       return target;
                     }
                   }}
-                  onUpdate={(latest) => {
-                    if (typeof latest.x === 'number' && carouselRef.current) {
-                      const cardWidth = carouselRef.current.querySelector('.flex-shrink-0')?.clientWidth || 400;
+                  onDragEnd={(_, info) => {
+                    if (carouselRef.current) {
+                      const card = carouselRef.current.querySelector('.flex-shrink-0');
+                      if (!card) return;
+                      const cardWidth = card.clientWidth;
                       const gap = window.innerWidth >= 768 ? 32 : 24;
                       const step = cardWidth + gap;
-                      const index = Math.min(Math.max(Math.round(Math.abs(latest.x) / step), 0), 2);
-                      if (index !== activeTestimonialIndex) {
-                        setActiveTestimonialIndex(index);
-                      }
+                      const containerWidth = carouselRef.current.offsetWidth;
+                      const offset = (containerWidth - cardWidth) / 2;
+                      
+                      const projectedX = x.get() + info.velocity.x * 0.2;
+                      const index = Math.min(Math.max(Math.round((offset - projectedX) / step), 0), 2);
+                      setActiveTestimonialIndex(index);
+                    }
+                  }}
+                  onAnimationComplete={() => {
+                    if (carouselRef.current) {
+                      const card = carouselRef.current.querySelector('.flex-shrink-0');
+                      if (!card) return;
+                      const cardWidth = card.clientWidth;
+                      const gap = window.innerWidth >= 768 ? 32 : 24;
+                      const step = cardWidth + gap;
+                      const containerWidth = carouselRef.current.offsetWidth;
+                      const offset = (containerWidth - cardWidth) / 2;
+                      
+                      const index = Math.min(Math.max(Math.round((offset - x.get()) / step), 0), 2);
+                      setActiveTestimonialIndex(index);
                     }
                   }}
                 >
@@ -923,20 +979,17 @@ function LandingPage({ theme, toggleTheme }: { theme: 'light' | 'dark', toggleTh
                     {
                       quote: "A Maesttro transformou nossa operação. O diagnóstico inicial revelou gargalos que ignorávamos há anos. Hoje nossa conversão é outra.",
                       author: "Ricardo Silva",
-                      role: "CEO da TechStore",
-                      image: "https://picsum.photos/seed/person1/100/100"
+                      role: "CEO da TechStore"
                     },
                     {
                       quote: "A regência do Maestro trouxe a harmonia que nossa equipe precisava. O ROI subiu 40% em apenas 3 meses de acompanhamento estratégico.",
                       author: "Amanda Costa",
-                      role: "Gerente de E-commerce na FashionHub",
-                      image: "https://picsum.photos/seed/person2/100/100"
+                      role: "Gerente de E-commerce na FashionHub"
                     },
                     {
                       quote: "Finalmente temos clareza nos dados. A partitura estratégica é o nosso guia diário para o crescimento sustentável da nossa loja.",
                       author: "Bruno Oliveira",
-                      role: "Fundador da BioVibe",
-                      image: "https://picsum.photos/seed/person3/100/100"
+                      role: "Fundador da BioVibe"
                     }
                   ].map((testimonial, i) => (
                     <motion.div
@@ -948,15 +1001,7 @@ function LandingPage({ theme, toggleTheme }: { theme: 'light' | 'dark', toggleTh
                       className="w-[85vw] sm:w-[400px] flex-shrink-0 p-6 md:p-8 rounded-3xl bg-zinc-50 dark:bg-zinc-800 border border-zinc-100 dark:border-zinc-700 relative group hover:bg-white dark:hover:bg-zinc-700 hover:shadow-xl transition-all duration-300"
                     >
                       <Quote className="absolute top-4 md:top-6 right-6 md:right-8 w-6 h-6 md:w-8 md:h-8 text-brand-100 dark:text-zinc-700 group-hover:text-brand-200 dark:group-hover:text-zinc-600 transition-colors" />
-                      <div className="flex items-center gap-4 mb-4 md:mb-6">
-                        <img 
-                          src={testimonial.image} 
-                          alt={testimonial.author} 
-                          className="w-10 h-10 md:w-12 md:h-12 rounded-full object-cover border-2 border-white dark:border-zinc-600 shadow-sm"
-                          referrerPolicy="no-referrer"
-                          loading="lazy"
-                          decoding="async"
-                        />
+                      <div className="mb-4 md:mb-6">
                         <div>
                           <h4 className="font-bold text-sm md:text-base text-brand-900 dark:text-white">{testimonial.author}</h4>
                           <p className="text-[10px] md:text-xs text-zinc-500 dark:text-zinc-400 font-medium uppercase tracking-wider">{testimonial.role}</p>
@@ -996,12 +1041,32 @@ function LandingPage({ theme, toggleTheme }: { theme: 'light' | 'dark', toggleTh
               className="space-y-2"
             >
               <FAQItem 
-                question="Você entende da minha plataforma?" 
-                answer={<>Sabemos extrair o melhor de cada plataforma, identificando limitações e oportunidades técnicas.</>}
+                question="Para qual tamanho de empresa a Maesttro é indicada?" 
+                answer={<>Focamos em e-commerces e operações digitais de pequeno e médio porte que já possuem tráfego, mas sentem que a operação está "desafinada" ou estagnada tecnologicamente.</>}
               />
               <FAQItem 
-                question="Você executa o serviço?" 
-                answer={<>Minha entrega principal é a inteligência e a supervisão técnica. Eu garanto que quem executa (seu time ou agência) não cometa erros que custam caro, validando cada etapa do roadmap estratégico.</>}
+                question="Já tenho uma plataforma (Nuvemshop, Shopify, Tray, etc). Preciso trocar para contratar a Maesttro?" 
+                answer={<>Não. Nossa especialidade é extrair a máxima performance do seu ecossistema atual. Se a sua tecnologia atual for um limitador para a sua escala, nós faremos a recomendação e a migração técnica, mas nosso foco inicial é otimizar o que você já tem.</>}
+              />
+              <FAQItem 
+                question="A Maesttro coloca a mão no código ou apenas diz o que fazer?" 
+                answer={<>Temos os dois braços. Na nossa consultoria estratégica, entregamos o roadmap para o seu time. Já no nosso braço de Engenharia, nós mesmos desenvolvemos soluções, sistemas e otimizações técnicas para garantir que a execução seja impecável.</>}
+              />
+              <FAQItem 
+                question="Vocês fazem integração de sistemas sob medida?" 
+                answer={<>Sim. Nosso braço de tecnologia é focado em criar soluções que conectam sua operação, desde integrações de ERP até sistemas personalizados para melhorar a experiência do seu cliente.</>}
+              />
+              <FAQItem 
+                question="A Maesttro substitui minha agência atual?" 
+                answer={<>Não necessariamente. Atuamos como a inteligência que rege a operação. Podemos trabalhar em conjunto com sua agência atual para garantir que o tráfego que eles trazem chegue em um site que realmente converte.</>}
+              />
+              <FAQItem 
+                question="Como vocês garantem que os dados do meu e-commerce estão corretos?" 
+                answer={<>Através da nossa Arquitetura de Dados. Implementamos camadas avançadas de Web Analytics e rastreamento para garantir que você tome decisões baseadas em fatos, eliminando o "achismo" da sua gestão.</>}
+              />
+              <FAQItem 
+                question="Você entende da minha plataforma?" 
+                answer={<>Sabemos extrair o melhor de cada plataforma, identificando limitações e oportunidades técnicas.</>}
               />
               <FAQItem 
                 question="Como funciona o modelo de orçamento?" 
